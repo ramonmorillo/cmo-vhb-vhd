@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CMO-HBV/HDV Pro</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero card">
+      <p class="eyebrow">Herramienta clínica preliminar</p>
+      <h1 id="appName">CMO-HBV/HDV Pro</h1>
+      <p id="appSubtitle" class="subtitle">
+        Apoyo a la priorización farmacéutica en pacientes con VHB o VHB-VHD.
+      </p>
+      <div class="hero-tags">
+        <span class="tag">Sin backend</span>
+        <span class="tag">Compatible con GitHub Pages</span>
+        <span class="tag">Versión preliminar</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="card">
+        <h2>Formulario de estratificación</h2>
+        <p class="muted">
+          Complete los dominios clínicos para estimar complejidad/prioridad de seguimiento farmacéutico.
+        </p>
+
+        <form id="stratificationForm" novalidate>
+          <div class="grid two">
+            <label>
+              Tipo de paciente *
+              <select id="patientType" required>
+                <option value="">Seleccione...</option>
+                <option value="VHB">VHB</option>
+                <option value="VHB-VHD">VHB-VHD</option>
+              </select>
+            </label>
+            <label>
+              Identificador no nominativo (opcional)
+              <input id="patientId" type="text" maxlength="40" placeholder="Ej.: HEP-2026-014" />
+            </label>
+          </div>
+
+          <div id="domainsContainer" class="domain-stack"></div>
+
+          <label>
+            Observaciones clínicas (opcional)
+            <textarea id="clinicalNotes" rows="3" placeholder="Resumen clínico no identificativo..."></textarea>
+          </label>
+
+          <p id="validationMsg" class="validation" aria-live="polite"></p>
+
+          <div class="actions">
+            <button type="submit" class="btn primary">Estratificar paciente</button>
+            <button type="reset" id="resetBtn" class="btn ghost">Nueva estratificación</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="resultCard" class="card hidden" aria-live="polite">
+        <div class="result-head">
+          <h2>Resultado</h2>
+          <span id="levelBadge" class="level-badge">Nivel --</span>
+        </div>
+
+        <p id="narrative" class="narrative"></p>
+
+        <div class="score-grid">
+          <article class="score-item">
+            <h3>Puntuación total</h3>
+            <p id="totalScore" class="score">0</p>
+          </article>
+          <article class="score-item">
+            <h3>Nivel asignado</h3>
+            <p id="assignedLevel" class="score">--</p>
+          </article>
+          <article class="score-item wide">
+            <h3>Periodicidad de reevaluación</h3>
+            <p id="reevalPlan"></p>
+          </article>
+        </div>
+
+        <details id="detailsPanel">
+          <summary>Ver desglose detallado</summary>
+          <div class="details-content">
+            <h4>Desglose por dominios</h4>
+            <ul id="domainBreakdown"></ul>
+
+            <h4>Variables activadas</h4>
+            <ul id="activeFactors"></ul>
+
+            <h4>Intervenciones farmacéuticas sugeridas</h4>
+            <ul id="interventions"></ul>
+
+            <h4>Observaciones incluidas</h4>
+            <p id="notesEcho" class="muted">Sin observaciones.</p>
+          </div>
+        </details>
+
+        <div class="actions">
+          <button id="copyBtn" class="btn secondary" type="button">Copiar resumen</button>
+          <button id="printBtn" class="btn secondary" type="button">Imprimir informe</button>
+        </div>
+      </section>
+
+      <section class="card disclaimer">
+        <h2>Avisos importantes</h2>
+        <ul id="disclaimers"></ul>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>
+        Herramienta de apoyo a la estratificación farmacéutica en VHB/VHB-VHD · Versión preliminar ·
+        No sustituye el juicio clínico · No es un producto sanitario · Evitar datos identificativos
+        directos · Creado por Ramón Morillo — Abril 2026.
+      </p>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
