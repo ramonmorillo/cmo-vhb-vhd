@@ -7,6 +7,11 @@ const APP_CONFIG = {
     { min: 16, level: 2, label: 'Nivel 2 (complejidad intermedia)' },
     { min: 0, level: 3, label: 'Nivel 3 (baja complejidad)' }
   ],
+  levelLegend: [
+    { level: 1, title: 'Nivel 1', description: 'Alta complejidad: intervención farmacéutica intensiva y proactiva.' },
+    { level: 2, title: 'Nivel 2', description: 'Complejidad intermedia: seguimiento estructurado y foco en adherencia.' },
+    { level: 3, title: 'Nivel 3', description: 'Baja complejidad: mantenimiento de estabilidad terapéutica.' }
+  ],
   domains: [
     {
       key: 'severidad',
@@ -81,30 +86,39 @@ const APP_CONFIG = {
     2: 'Reevaluación cada 6 meses y luego anual salvo criterio profesional o cercanía a cambio de nivel.',
     3: 'Reevaluación cada 12 meses y luego anual salvo criterio profesional o cercanía a cambio de nivel.'
   },
-  interventions: {
-    1: [
-      'Revisión integral de la medicación.',
-      'Evaluación de interacciones.',
-      'Valoración e intervención sobre adherencia.',
-      'Entrevista clínica estructurada.',
-      'Coordinación con hepatología.',
-      'Seguimiento por telefarmacia.',
-      'Educación al paciente y apoyo al automanejo.'
-    ],
-    2: [
-      'Revisión periódica de medicación.',
-      'Evaluación de adherencia.',
-      'Educación al paciente.',
-      'Monitorización de interacciones.',
-      'Seguimiento estructurado.',
-      'Posible seguimiento telemático.'
-    ],
-    3: [
-      'Consulta breve de atención farmacéutica.',
-      'Confirmación de adherencia.',
-      'Monitorización rutinaria.',
-      'Prevención de futuras complicaciones.'
-    ]
+  carePlanByLevel: {
+    1: {
+      objective: 'Atención farmacéutica intensiva y manejo proactivo del riesgo.',
+      interventions: [
+        'Revisión integral de la medicación.',
+        'Evaluación de interacciones farmacológicas.',
+        'Valoración e intervención sobre adherencia.',
+        'Entrevista clínica estructurada.',
+        'Coordinación con el equipo de hepatología.',
+        'Seguimiento mediante telefarmacia.',
+        'Educación al paciente y apoyo al automanejo.'
+      ]
+    },
+    2: {
+      objective: 'Refuerzo de la adherencia y monitorización de la complejidad terapéutica.',
+      interventions: [
+        'Revisión periódica de la medicación.',
+        'Evaluación de adherencia.',
+        'Educación al paciente.',
+        'Monitorización de interacciones potenciales.',
+        'Visitas de seguimiento estructuradas.',
+        'Posible seguimiento telemático / telefarmacia.'
+      ]
+    },
+    3: {
+      objective: 'Mantenimiento de la estabilidad terapéutica y prevención de complicaciones futuras.',
+      interventions: [
+        'Consulta breve de atención farmacéutica.',
+        'Confirmación de adherencia.',
+        'Monitorización rutinaria de la farmacoterapia.',
+        'Prevención de futuras complicaciones.'
+      ]
+    }
   },
   disclaimers: [
     'Herramienta de apoyo a la práctica clínica farmacéutica; no sustituye el juicio clínico profesional.',
@@ -124,12 +138,28 @@ const state = {
 function init() {
   document.getElementById('appName').textContent = APP_CONFIG.appName;
   document.getElementById('appSubtitle').textContent = APP_CONFIG.subtitle;
+  renderLevelLegend();
   renderDomains();
   renderDisclaimers();
   bindEvents();
 
   const details = document.getElementById('detailsPanel');
   details.open = state.preferences.detailsOpen;
+}
+
+function renderLevelLegend() {
+  const legend = document.getElementById('levelLegend');
+  legend.innerHTML = '';
+
+  APP_CONFIG.levelLegend.forEach((item) => {
+    const article = document.createElement('article');
+    article.className = `legend-item legend-${item.level}`;
+    article.innerHTML = `
+      <strong>${item.title}</strong>
+      <p>${item.description}</p>
+    `;
+    legend.appendChild(article);
+  });
 }
 
 function renderDomains() {
@@ -146,11 +176,11 @@ function renderDomains() {
       const row = document.createElement('label');
       row.className = 'option-row';
       row.innerHTML = `
-        <span>
+        <span class="option-main">
           <input type="checkbox" data-item-id="${item.id}" data-domain="${domain.key}" />
-          ${item.label}
+          <span>${item.label}</span>
         </span>
-        <small>${item.points} puntos</small>
+        <small class="point-chip">${item.points} puntos</small>
       `;
       fieldset.appendChild(row);
     });
@@ -183,6 +213,12 @@ function bindEvents() {
   detailsPanel.addEventListener('toggle', () => {
     localStorage.setItem('hbv_hdv_details_open', JSON.stringify(detailsPanel.open));
   });
+
+  document.querySelectorAll('input[type="checkbox"][data-item-id]').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+      checkbox.closest('.option-row')?.classList.toggle('is-selected', checkbox.checked);
+    });
+  });
 }
 
 function onSubmit(event) {
@@ -206,6 +242,7 @@ function onSubmit(event) {
 function onReset() {
   document.getElementById('resultCard').classList.add('hidden');
   document.getElementById('validationMsg').textContent = '';
+  document.querySelectorAll('.option-row.is-selected').forEach((row) => row.classList.remove('is-selected'));
   state.lastResult = null;
 }
 
@@ -280,13 +317,12 @@ function calculateStratification(data) {
     overrideResolution,
     reevalText,
     narrative,
-    interventions: APP_CONFIG.interventions[assignedLevel]
+    carePlan: APP_CONFIG.carePlanByLevel[assignedLevel]
   };
 }
 
 function determineLevelByThreshold(totalScore) {
-  const match = APP_CONFIG.thresholds.find((t) => totalScore >= t.min);
-  return match;
+  return APP_CONFIG.thresholds.find((t) => totalScore >= t.min);
 }
 
 /*
@@ -320,6 +356,7 @@ function renderResult(result) {
   document.getElementById('totalScore').textContent = String(result.totalScore);
   document.getElementById('assignedLevel').textContent = result.levelMeta.label;
   document.getElementById('reevalPlan').textContent = result.reevalText;
+  document.getElementById('careObjective').textContent = `Objetivo asistencial: ${result.carePlan.objective}`;
 
   fillList(
     document.getElementById('domainBreakdown'),
@@ -333,7 +370,7 @@ function renderResult(result) {
       : ['Ninguna variable activada.']
   );
 
-  const interventions = [...result.interventions];
+  const interventions = [...result.carePlan.interventions];
   if (result.overrideResolution.triggered.length) {
     interventions.unshift(`Reglas de seguridad aplicadas: ${result.overrideResolution.triggered.join(' | ')}`);
   }
@@ -364,6 +401,8 @@ async function copySummary() {
     `Puntuación total: ${r.totalScore}`,
     `Nivel final: ${r.levelMeta.label}`,
     `Periodicidad: ${r.reevalText}`,
+    `Objetivo asistencial: ${r.carePlan.objective}`,
+    `Intervenciones sugeridas: ${r.carePlan.interventions.join('; ')}`,
     `Factores activos: ${r.activeFactors.length ? r.activeFactors.map((f) => f.label).join('; ') : 'Ninguno'}`,
     `Narrativa: ${r.narrative}`
   ].join('\n');

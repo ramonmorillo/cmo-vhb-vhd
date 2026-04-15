@@ -27,6 +27,8 @@
           Complete los dominios clínicos para estimar complejidad/prioridad de seguimiento farmacéutico.
         </p>
 
+        <div id="levelLegend" class="level-legend" aria-label="Leyenda de niveles clínicos"></div>
+
         <form id="stratificationForm" novalidate>
           <div class="grid two">
             <label>
@@ -61,11 +63,14 @@
 
       <section id="resultCard" class="card hidden" aria-live="polite">
         <div class="result-head">
-          <h2>Resultado</h2>
+          <h2>Informe clínico resumido</h2>
           <span id="levelBadge" class="level-badge">Nivel --</span>
         </div>
 
-        <p id="narrative" class="narrative"></p>
+        <article class="report-block clinical-summary">
+          <h3>Resumen clínico</h3>
+          <p id="narrative" class="narrative"></p>
+        </article>
 
         <div class="score-grid">
           <article class="score-item">
@@ -82,6 +87,12 @@
           </article>
         </div>
 
+        <article class="report-block intervention-card">
+          <h3>Plan de seguimiento farmacéutico sugerido</h3>
+          <p id="careObjective" class="objective"></p>
+          <ul id="interventions"></ul>
+        </article>
+
         <details id="detailsPanel">
           <summary>Ver desglose detallado</summary>
           <div class="details-content">
@@ -90,9 +101,6 @@
 
             <h4>Variables activadas</h4>
             <ul id="activeFactors"></ul>
-
-            <h4>Intervenciones farmacéuticas sugeridas</h4>
-            <ul id="interventions"></ul>
 
             <h4>Observaciones incluidas</h4>
             <p id="notesEcho" class="muted">Sin observaciones.</p>
