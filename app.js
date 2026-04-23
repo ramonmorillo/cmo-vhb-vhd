@@ -18,7 +18,7 @@ const APP_CONFIG = {
       title: 'A. Severidad de enfermedad hepática',
       items: [
         { id: 'cirrosis', label: 'Cirrosis', points: 4 },
-        { id: 'cirrosis_descompensada', label: 'Cirrosis descompensada (últimos 3 meses)', points: 4 },
+        { id: 'cirrosis_descompensada', label: 'Cirrosis descompensada (últimos 3 meses)', points: 2 },
         { id: 'trasplante', label: 'Trasplante hepático', points: 3 }
       ]
     },
@@ -26,7 +26,7 @@ const APP_CONFIG = {
       key: 'comorbilidad',
       title: 'B. Comorbilidad y complejidad clínica',
       items: [
-        { id: 'vih_coinfeccion', label: 'Coinfección por VIH', points: 3 },
+        { id: 'vih_coinfeccion', label: 'Coinfección por VIH y/o VHD', points: 3 },
         { id: 'insuficiencia_renal', label: 'Función renal alterada / insuficiencia renal', points: 3 }
       ]
     },
