@@ -128,10 +128,42 @@ const APP_CONFIG = {
   ]
 };
 
+const STORAGE_KEYS = {
+  detailsOpen: 'hbv_hdv_details_open',
+  patients: 'hbv_hdv_patients_v1'
+};
+
 const state = {
   lastResult: null,
+  currentPatientId: null,
   preferences: {
-    detailsOpen: JSON.parse(localStorage.getItem('hbv_hdv_details_open') || 'false')
+    detailsOpen: JSON.parse(localStorage.getItem(STORAGE_KEYS.detailsOpen) || 'false')
+  }
+};
+
+const patientRepository = {
+  list() {
+    return safeJsonParse(localStorage.getItem(STORAGE_KEYS.patients), []);
+  },
+  getById(id) {
+    return this.list().find((record) => record.id === id) || null;
+  },
+  save(record) {
+    const records = this.list();
+    records.push(record);
+    localStorage.setItem(STORAGE_KEYS.patients, JSON.stringify(records));
+    return record;
+  },
+  update(id, updater) {
+    const records = this.list();
+    const index = records.findIndex((record) => record.id === id);
+    if (index === -1) return null;
+    records[index] = updater(records[index]);
+    localStorage.setItem(STORAGE_KEYS.patients, JSON.stringify(records));
+    return records[index];
+  },
+  replaceAll(records) {
+    localStorage.setItem(STORAGE_KEYS.patients, JSON.stringify(records));
   }
 };
 
@@ -145,6 +177,16 @@ function init() {
 
   const details = document.getElementById('detailsPanel');
   details.open = state.preferences.detailsOpen;
+
+  refreshPatientsList();
+}
+
+function safeJsonParse(text, fallback) {
+  try {
+    return text ? JSON.parse(text) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function renderLevelLegend() {
@@ -211,7 +253,7 @@ function bindEvents() {
   printBtn.addEventListener('click', () => window.print());
 
   detailsPanel.addEventListener('toggle', () => {
-    localStorage.setItem('hbv_hdv_details_open', JSON.stringify(detailsPanel.open));
+    localStorage.setItem(STORAGE_KEYS.detailsOpen, JSON.stringify(detailsPanel.open));
   });
 
   document.querySelectorAll('input[type="checkbox"][data-item-id]').forEach((checkbox) => {
@@ -219,6 +261,17 @@ function bindEvents() {
       checkbox.closest('.option-row')?.classList.toggle('is-selected', checkbox.checked);
     });
   });
+
+  document.getElementById('savePatientBtn').addEventListener('click', onSavePatient);
+  document.getElementById('updatePatientBtn').addEventListener('click', onUpdatePatient);
+  document.getElementById('loadPatientBtn').addEventListener('click', onLoadPatient);
+  document.getElementById('newRecordBtn').addEventListener('click', startNewRecord);
+
+  document.getElementById('exportExcelBtn').addEventListener('click', () => exportResearchData('xlsx'));
+  document.getElementById('exportCsvBtn').addEventListener('click', () => exportResearchData('csv'));
+  document.getElementById('exportJsonBtn').addEventListener('click', () => exportResearchData('json'));
+  document.getElementById('backupExportBtn').addEventListener('click', exportBackupJson);
+  document.getElementById('backupImportInput').addEventListener('change', importBackupJson);
 }
 
 function onSubmit(event) {
@@ -237,6 +290,7 @@ function onSubmit(event) {
   const result = calculateStratification(formData);
   state.lastResult = result;
   renderResult(result);
+  setStorageStatus('Estratificación calculada. Use “Guardar paciente” o “Actualizar paciente” para persistir.');
 }
 
 function onReset() {
@@ -265,7 +319,7 @@ function collectFormData() {
     factors[itemId] = checked;
     if (checked) {
       domainScores[domainKey] += itemDef.points;
-      activeFactors.push({ label: itemDef.label, points: itemDef.points });
+      activeFactors.push({ id: itemDef.id, label: itemDef.label, points: itemDef.points, domainKey });
     }
   });
 
@@ -388,6 +442,400 @@ function fillList(element, items) {
     li.textContent = text;
     element.appendChild(li);
   });
+}
+
+function buildEvaluationFromResult(result) {
+  const now = new Date().toISOString();
+  return {
+    evaluation_id: generateId('eval'),
+    evaluation_date: now,
+    patient_type: result.patientType,
+    total_score: result.totalScore,
+    stratification_level: result.assignedLevel,
+    stratification_label: result.levelMeta.label,
+    factors: result.factors,
+    domain_scores: result.domainScores
+  };
+}
+
+function onSavePatient() {
+  if (!state.lastResult) {
+    setStorageStatus('Primero calcule la estratificación del paciente para poder guardarla.', true);
+    return;
+  }
+  if (state.currentPatientId) {
+    setStorageStatus('Ya existe un registro cargado. Use “Actualizar paciente” para conservar trazabilidad.', true);
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const record = {
+    id: generateId('pat'),
+    pseudonym_id: generateStablePseudoId(state.lastResult.patientId),
+    patient_identifier_local: state.lastResult.patientId || null,
+    patient_type: state.lastResult.patientType,
+    notes_non_identifying: state.lastResult.notes || null,
+    created_at: now,
+    updated_at: now,
+    latest_result: {
+      total_score: state.lastResult.totalScore,
+      stratification_level: state.lastResult.assignedLevel,
+      stratification_label: state.lastResult.levelMeta.label,
+      factors: state.lastResult.factors,
+      domain_scores: state.lastResult.domainScores
+    },
+    evaluations: [buildEvaluationFromResult(state.lastResult)]
+  };
+
+  patientRepository.save(record);
+  state.currentPatientId = record.id;
+  refreshPatientsList();
+  setStorageStatus(`Paciente guardado localmente (${record.pseudonym_id}).`);
+}
+
+function onUpdatePatient() {
+  if (!state.lastResult) {
+    setStorageStatus('Primero calcule la estratificación antes de actualizar.', true);
+    return;
+  }
+  if (!state.currentPatientId) {
+    setStorageStatus('No hay paciente cargado. Use “Guardar paciente” para crear uno nuevo.', true);
+    return;
+  }
+
+  const updated = patientRepository.update(state.currentPatientId, (existing) => {
+    const now = new Date().toISOString();
+    return {
+      ...existing,
+      patient_identifier_local: state.lastResult.patientId || null,
+      patient_type: state.lastResult.patientType,
+      notes_non_identifying: state.lastResult.notes || null,
+      updated_at: now,
+      latest_result: {
+        total_score: state.lastResult.totalScore,
+        stratification_level: state.lastResult.assignedLevel,
+        stratification_label: state.lastResult.levelMeta.label,
+        factors: state.lastResult.factors,
+        domain_scores: state.lastResult.domainScores
+      },
+      evaluations: [...existing.evaluations, buildEvaluationFromResult(state.lastResult)]
+    };
+  });
+
+  if (!updated) {
+    setStorageStatus('No se pudo actualizar el paciente. Recargue la lista y reintente.', true);
+    return;
+  }
+
+  refreshPatientsList();
+  setStorageStatus(`Paciente actualizado (${updated.pseudonym_id}). Se añadió una nueva evaluación.`);
+}
+
+function onLoadPatient() {
+  const selector = document.getElementById('savedPatientsSelect');
+  const id = selector.value;
+  if (!id) {
+    setStorageStatus('Seleccione un paciente guardado para cargarlo.', true);
+    return;
+  }
+
+  const record = patientRepository.getById(id);
+  if (!record) {
+    setStorageStatus('Registro no encontrado en almacenamiento local.', true);
+    return;
+  }
+
+  state.currentPatientId = record.id;
+  loadRecordIntoForm(record);
+  setStorageStatus(`Paciente cargado (${record.pseudonym_id}).`);
+}
+
+function loadRecordIntoForm(record) {
+  document.getElementById('patientType').value = record.patient_type || '';
+  document.getElementById('patientId').value = record.patient_identifier_local || '';
+  document.getElementById('clinicalNotes').value = record.notes_non_identifying || '';
+
+  const factors = record.latest_result?.factors || {};
+  document.querySelectorAll('input[type="checkbox"][data-item-id]').forEach((checkbox) => {
+    const active = Boolean(factors[checkbox.dataset.itemId]);
+    checkbox.checked = active;
+    checkbox.closest('.option-row')?.classList.toggle('is-selected', active);
+  });
+
+  const formData = collectFormData();
+  const result = calculateStratification(formData);
+  state.lastResult = result;
+  renderResult(result);
+}
+
+function startNewRecord() {
+  state.currentPatientId = null;
+  document.getElementById('stratificationForm').reset();
+  onReset();
+  setStorageStatus('Formulario reiniciado para nueva estratificación no vinculada.');
+}
+
+function refreshPatientsList() {
+  const records = patientRepository.list();
+  const selector = document.getElementById('savedPatientsSelect');
+  selector.innerHTML = '<option value="">Seleccione paciente guardado...</option>';
+
+  records
+    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+    .forEach((record) => {
+      const option = document.createElement('option');
+      option.value = record.id;
+      option.textContent = `${record.pseudonym_id} · ${record.patient_type} · ${formatDateTime(record.updated_at)}`;
+      selector.appendChild(option);
+    });
+
+  document.getElementById('storedCount').textContent = String(records.length);
+}
+
+function formatDateTime(value) {
+  return new Date(value).toLocaleString('es-ES');
+}
+
+function setStorageStatus(message, isError = false) {
+  const el = document.getElementById('storageStatus');
+  el.textContent = message;
+  el.classList.toggle('error', isError);
+}
+
+function generateId(prefix) {
+  const uid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  return `${prefix}-${uid}`;
+}
+
+function generateStablePseudoId(seed) {
+  const source = seed || `${Date.now()}-${Math.random()}`;
+  let hash = 0;
+  for (let i = 0; i < source.length; i += 1) {
+    hash = (hash << 5) - hash + source.charCodeAt(i);
+    hash |= 0;
+  }
+  return `PSEUDO-${Math.abs(hash).toString(36).padStart(8, '0').toUpperCase()}`;
+}
+
+function getSelectedRecordsForExport() {
+  const mode = document.getElementById('exportScope').value;
+  const records = patientRepository.list();
+
+  let selected = records;
+  if (mode === 'current') {
+    selected = state.currentPatientId ? records.filter((r) => r.id === state.currentPatientId) : [];
+  }
+  if (mode === 'complete') {
+    selected = selected.filter((r) => Boolean(r.latest_result?.stratification_label));
+  }
+  return selected;
+}
+
+function buildResearchDatasets(records) {
+  const allFactorIds = APP_CONFIG.domains.flatMap((d) => d.items.map((item) => item.id));
+
+  const patients = records.map((record) => {
+    const row = {
+      patient_id: record.pseudonym_id,
+      created_at: record.created_at,
+      updated_at: record.updated_at,
+      patient_type: record.patient_type,
+      total_score: record.latest_result?.total_score ?? null,
+      stratification_level: record.latest_result?.stratification_level ?? null,
+      stratification_label: record.latest_result?.stratification_label ?? null
+    };
+
+    allFactorIds.forEach((factorId) => {
+      row[`factor_${factorId}`] = normalizeBoolean(record.latest_result?.factors?.[factorId]);
+    });
+
+    return row;
+  });
+
+  const evaluations = records.flatMap((record) =>
+    (record.evaluations || []).map((evaluation) => {
+      const row = {
+        evaluation_id: evaluation.evaluation_id,
+        patient_id: record.pseudonym_id,
+        evaluation_date: evaluation.evaluation_date,
+        patient_type: evaluation.patient_type,
+        total_score: evaluation.total_score,
+        stratification_level: evaluation.stratification_level,
+        stratification_label: evaluation.stratification_label
+      };
+      allFactorIds.forEach((factorId) => {
+        row[`factor_${factorId}`] = normalizeBoolean(evaluation.factors?.[factorId]);
+      });
+      return row;
+    })
+  );
+
+  const dataDictionary = buildDataDictionary(allFactorIds);
+
+  return { patients, evaluations, dataDictionary };
+}
+
+function buildDataDictionary(allFactorIds) {
+  const factorMap = new Map();
+  APP_CONFIG.domains.forEach((domain) => {
+    domain.items.forEach((item) => factorMap.set(item.id, { ...item, domain: domain.title }));
+  });
+
+  const base = [
+    {
+      variable_name: 'patient_id',
+      label: 'Identificador pseudonimizado estable',
+      type: 'string',
+      allowed_values: 'PSEUDO-*',
+      description: 'No incluye identificadores directos.',
+      source: 'Local storage',
+      notes: 'Nombre, DNI, teléfono, email y dirección excluidos por diseño.'
+    },
+    {
+      variable_name: 'created_at / updated_at / evaluation_date',
+      label: 'Fechas en ISO 8601',
+      type: 'datetime',
+      allowed_values: 'YYYY-MM-DDTHH:mm:ss.sssZ',
+      description: 'Fechas de creación, actualización y evaluación.',
+      source: 'Aplicación',
+      notes: 'Formato homogéneo para análisis estadístico.'
+    }
+  ];
+
+  const factorRows = allFactorIds.map((factorId) => {
+    const factor = factorMap.get(factorId);
+    return {
+      variable_name: `factor_${factorId}`,
+      label: factor?.label || factorId,
+      type: 'boolean',
+      allowed_values: 'true|false',
+      description: `Criterio clínico (${factor?.points ?? '-'} puntos).`,
+      source: factor?.domain || 'Formulario',
+      notes: 'Booleano normalizado para SPSS/R/Stata.'
+    };
+  });
+
+  return [...base, ...factorRows];
+}
+
+function normalizeBoolean(value) {
+  return Boolean(value);
+}
+
+function exportResearchData(format) {
+  const records = getSelectedRecordsForExport();
+  if (!records.length) {
+    setExportStatus('No hay registros para exportar con el filtro seleccionado.', true);
+    return;
+  }
+
+  const datasets = buildResearchDatasets(records);
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+
+  try {
+    if (format === 'json') {
+      const payload = {
+        exported_at: new Date().toISOString(),
+        privacy: {
+          direct_identifiers_exported: false,
+          excluded_fields: ['patient_identifier_local', 'notes_non_identifying']
+        },
+        datasets
+      };
+      downloadBlob(`hbv-hdv-research-${stamp}.json`, JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+    }
+
+    if (format === 'csv') {
+      downloadBlob(`hbv-hdv-patients-${stamp}.csv`, toDelimited(datasets.patients, ','), 'text/csv;charset=utf-8');
+      if (datasets.evaluations.length) {
+        downloadBlob(`hbv-hdv-evaluations-${stamp}.csv`, toDelimited(datasets.evaluations, ','), 'text/csv;charset=utf-8');
+      }
+      downloadBlob(`hbv-hdv-dictionary-${stamp}.csv`, toDelimited(datasets.dataDictionary, ','), 'text/csv;charset=utf-8');
+    }
+
+    if (format === 'xlsx') {
+      if (typeof XLSX === 'undefined') {
+        throw new Error('Librería XLSX no disponible en este navegador.');
+      }
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(datasets.patients), 'Patients');
+      if (datasets.evaluations.length) {
+        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(datasets.evaluations), 'Evaluations');
+      }
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(datasets.dataDictionary), 'DataDictionary');
+      XLSX.writeFile(workbook, `hbv-hdv-research-${stamp}.xlsx`);
+    }
+
+    setExportStatus(`Exportación ${format.toUpperCase()} completada (${records.length} registro/s).`);
+  } catch (error) {
+    setExportStatus(`Error en exportación ${format.toUpperCase()}: ${error.message}`, true);
+  }
+}
+
+function toDelimited(rows, delimiter) {
+  if (!rows.length) return '';
+  const headers = Object.keys(rows[0]);
+  const lines = [headers.join(delimiter)];
+
+  rows.forEach((row) => {
+    const values = headers.map((header) => {
+      const value = row[header] ?? '';
+      const text = String(value).replace(/"/g, '""');
+      return `"${text}"`;
+    });
+    lines.push(values.join(delimiter));
+  });
+
+  return `\ufeff${lines.join('\n')}`;
+}
+
+function downloadBlob(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function setExportStatus(message, isError = false) {
+  const el = document.getElementById('exportStatus');
+  el.textContent = message;
+  el.classList.toggle('error', isError);
+}
+
+function exportBackupJson() {
+  const payload = {
+    exported_at: new Date().toISOString(),
+    source: APP_CONFIG.appName,
+    records: patientRepository.list()
+  };
+  downloadBlob('hbv-hdv-backup.json', JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+  setExportStatus('Backup JSON completo generado.');
+}
+
+function importBackupJson(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result));
+      if (!Array.isArray(parsed.records)) {
+        throw new Error('El archivo no contiene un array de registros válido.');
+      }
+      patientRepository.replaceAll(parsed.records);
+      refreshPatientsList();
+      setExportStatus(`Backup importado correctamente (${parsed.records.length} registros).`);
+    } catch (error) {
+      setExportStatus(`Error al importar backup: ${error.message}`, true);
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file, 'utf-8');
 }
 
 async function copySummary() {
