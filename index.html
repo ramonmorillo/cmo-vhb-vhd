@@ -61,6 +61,31 @@
         </form>
       </section>
 
+      <section class="card">
+        <h2>Persistencia local de pacientes</h2>
+        <p class="muted">
+          Registros guardados en este navegador/equipo: <strong id="storedCount">0</strong>
+        </p>
+        <div class="actions compact">
+          <button id="savePatientBtn" class="btn secondary" type="button">Guardar paciente</button>
+          <button id="updatePatientBtn" class="btn secondary" type="button">Actualizar paciente</button>
+          <button id="newRecordBtn" class="btn ghost" type="button">Nueva estratificación</button>
+        </div>
+
+        <div class="grid two">
+          <label>
+            Pacientes guardados
+            <select id="savedPatientsSelect">
+              <option value="">Seleccione paciente guardado...</option>
+            </select>
+          </label>
+          <div class="actions align-end">
+            <button id="loadPatientBtn" class="btn secondary" type="button">Cargar</button>
+          </div>
+        </div>
+        <p id="storageStatus" class="status" aria-live="polite"></p>
+      </section>
+
       <section id="resultCard" class="card hidden" aria-live="polite">
         <div class="result-head">
           <h2>Informe clínico resumido</h2>
@@ -113,6 +138,41 @@
         </div>
       </section>
 
+      <section class="card">
+        <h2>Extracción de datos para investigación</h2>
+        <p class="muted">
+          La exportación excluye identificadores directos (nombre, DNI, teléfono, dirección, correo y texto libre).
+          Se utiliza <strong>patient_id</strong> pseudonimizado estable.
+        </p>
+
+        <div class="grid two">
+          <label>
+            Alcance de exportación
+            <select id="exportScope">
+              <option value="all">Todos los pacientes</option>
+              <option value="current">Solo paciente cargado</option>
+              <option value="complete">Solo registros completos</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="actions compact">
+          <button id="exportExcelBtn" class="btn secondary" type="button">Exportar Excel</button>
+          <button id="exportCsvBtn" class="btn secondary" type="button">Exportar CSV</button>
+          <button id="exportJsonBtn" class="btn secondary" type="button">Exportar JSON</button>
+        </div>
+
+        <div class="actions compact">
+          <button id="backupExportBtn" class="btn ghost" type="button">Exportar backup JSON</button>
+          <label class="file-inline">
+            Importar backup JSON
+            <input id="backupImportInput" type="file" accept="application/json" />
+          </label>
+        </div>
+
+        <p id="exportStatus" class="status" aria-live="polite"></p>
+      </section>
+
       <section class="card disclaimer">
         <h2>Avisos importantes</h2>
         <ul id="disclaimers"></ul>
@@ -127,6 +187,7 @@
       </p>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

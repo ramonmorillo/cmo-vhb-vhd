@@ -502,3 +502,41 @@ summary {
     border: 1px solid #ddd;
   }
 }
+
+.actions.compact {
+  justify-content: flex-start;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.actions.align-end {
+  align-items: end;
+}
+
+.status {
+  margin: 0.6rem 0 0;
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.status.error {
+  color: var(--high);
+}
+
+.file-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #c1d7f3;
+  border-radius: 10px;
+  padding: 0.48rem 0.62rem;
+  background: #f3f8ff;
+  font-size: 0.9rem;
+}
+
+.file-inline input[type='file'] {
+  margin-top: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
