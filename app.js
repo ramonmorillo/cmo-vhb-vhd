@@ -3,14 +3,14 @@ const APP_CONFIG = {
   appName: 'CMO-HBV/HDV Pro',
   subtitle: 'Herramienta de apoyo a la priorización farmacéutica en pacientes con VHB o VHB-VHD.',
   thresholds: [
-    { min: 26, level: 1, label: 'Nivel 1 (alta complejidad / prioritario)' },
-    { min: 16, level: 2, label: 'Nivel 2 (complejidad intermedia)' },
-    { min: 0, level: 3, label: 'Nivel 3 (baja complejidad)' }
+    { min: 13, level: 1, label: 'Nivel 1 (alta complejidad / prioritario, ≥13 puntos)' },
+    { min: 8, level: 2, label: 'Nivel 2 (complejidad intermedia, 8-12 puntos)' },
+    { min: 0, level: 3, label: 'Nivel 3 (baja complejidad, 0-7 puntos)' }
   ],
   levelLegend: [
-    { level: 1, title: 'Nivel 1', description: 'Alta complejidad: intervención farmacéutica intensiva y proactiva.' },
-    { level: 2, title: 'Nivel 2', description: 'Complejidad intermedia: seguimiento estructurado y foco en adherencia.' },
-    { level: 3, title: 'Nivel 3', description: 'Baja complejidad: mantenimiento de estabilidad terapéutica.' }
+    { level: 1, title: 'Nivel 1', description: '≥13 puntos. Alta complejidad: intervención farmacéutica intensiva y proactiva.' },
+    { level: 2, title: 'Nivel 2', description: '8-12 puntos. Complejidad intermedia: seguimiento estructurado y foco en adherencia.' },
+    { level: 3, title: 'Nivel 3', description: '0-7 puntos. Baja complejidad: mantenimiento de estabilidad terapéutica.' }
   ],
   domains: [
     {
