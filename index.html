@@ -8,6 +8,10 @@
   </head>
   <body>
     <header class="hero card">
+      <div class="hero-topline">
+        <span class="product-pill">CMO Suite</span>
+        <span class="version-pill">v2 visual</span>
+      </div>
       <p class="eyebrow">Herramienta clínica preliminar</p>
       <h1 id="appName">CMO-HBV/HDV Pro</h1>
       <p id="appSubtitle" class="subtitle">
@@ -18,16 +22,45 @@
         <span class="tag">Compatible con GitHub Pages</span>
         <span class="tag">Versión preliminar</span>
       </div>
+      <div class="hero-kpis" aria-label="Indicadores rápidos de la herramienta">
+        <article><strong id="heroStoredCount">0</strong><span>pacientes guardados</span></article>
+        <article><strong>3</strong><span>niveles CMO</span></article>
+        <article><strong>5</strong><span>dominios clínicos</span></article>
+      </div>
     </header>
 
+    <nav class="app-nav" aria-label="Navegación principal">
+      <a href="#stratificationSection">Estratificación</a>
+      <a href="#patientSection">Pacientes</a>
+      <a href="#resultCard">Informe</a>
+      <a href="#researchSection">Investigación</a>
+    </nav>
+
     <main class="layout">
-      <section class="card">
-        <h2>Formulario de estratificación</h2>
+      <section id="stratificationSection" class="card">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Módulo 1</p>
+            <h2>Formulario de estratificación</h2>
+          </div>
+          <span id="liveScorePill" class="live-score">0 puntos · Nivel 3</span>
+        </div>
         <p class="muted">
           Complete los dominios clínicos para estimar complejidad/prioridad de seguimiento farmacéutico.
         </p>
 
         <div id="levelLegend" class="level-legend" aria-label="Leyenda de niveles clínicos"></div>
+
+        <aside class="live-panel" aria-live="polite">
+          <div>
+            <span class="mini-label">Progreso de cumplimentación</span>
+            <div class="progress-track"><span id="completionBar"></span></div>
+          </div>
+          <div class="live-panel-grid">
+            <strong id="liveScoreValue">0</strong>
+            <span id="liveLevelValue">Nivel 3 · baja complejidad</span>
+          </div>
+        </aside>
 
         <form id="stratificationForm" novalidate>
           <div class="grid two">
@@ -61,8 +94,13 @@
         </form>
       </section>
 
-      <section class="card">
-        <h2>Persistencia local de pacientes</h2>
+      <section id="patientSection" class="card">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Módulo 2</p>
+            <h2>Persistencia local de pacientes</h2>
+          </div>
+        </div>
         <p class="muted">
           Registros guardados en este navegador/equipo: <strong id="storedCount">0</strong>
         </p>
@@ -74,6 +112,10 @@
 
         <div class="grid two">
           <label>
+            Buscar por pseudónimo/tipo
+            <input id="patientSearch" type="search" placeholder="Filtrar pacientes guardados..." />
+          </label>
+          <label>
             Pacientes guardados
             <select id="savedPatientsSelect">
               <option value="">Seleccione paciente guardado...</option>
@@ -84,6 +126,12 @@
           </div>
         </div>
         <p id="storageStatus" class="status" aria-live="polite"></p>
+        <div class="table-wrap">
+          <table class="patients-table" aria-label="Resumen de pacientes guardados">
+            <thead><tr><th>Paciente</th><th>Tipo</th><th>Nivel</th><th>Actualizado</th></tr></thead>
+            <tbody id="patientsTableBody"><tr><td colspan="4">Sin registros guardados.</td></tr></tbody>
+          </table>
+        </div>
       </section>
 
       <section id="resultCard" class="card hidden" aria-live="polite">
@@ -138,8 +186,13 @@
         </div>
       </section>
 
-      <section class="card">
-        <h2>Extracción de datos para investigación</h2>
+      <section id="researchSection" class="card">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Módulo 3</p>
+            <h2>Extracción de datos para investigación</h2>
+          </div>
+        </div>
         <p class="muted">
           La exportación excluye identificadores directos (nombre, DNI, teléfono, dirección, correo y texto libre).
           Se utiliza <strong>patient_id</strong> pseudonimizado estable.

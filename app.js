@@ -272,6 +272,54 @@ function bindEvents() {
   document.getElementById('exportJsonBtn').addEventListener('click', () => exportResearchData('json'));
   document.getElementById('backupExportBtn').addEventListener('click', exportBackupJson);
   document.getElementById('backupImportInput').addEventListener('change', importBackupJson);
+  document.getElementById('patientSearch').addEventListener('input', refreshPatientsList);
+
+  document.getElementById('patientType').addEventListener('change', updateLiveAssessment);
+  document.querySelectorAll('input[type="checkbox"][data-item-id]').forEach((checkbox) => {
+    checkbox.addEventListener('change', updateLiveAssessment);
+  });
+  updateLiveAssessment();
+}
+
+function updateLiveAssessment() {
+  const formData = collectFormData();
+  const result = calculateStratification(formData);
+  const checked = formData.activeFactors.length;
+  const totalItems = APP_CONFIG.domains.flatMap((domain) => domain.items).length;
+  const completion = Math.round((checked / totalItems) * 100);
+
+  document.getElementById('liveScorePill').textContent = `${result.totalScore} puntos · Nivel ${result.assignedLevel}`;
+  document.getElementById('liveScoreValue').textContent = String(result.totalScore);
+  document.getElementById('liveLevelValue').textContent = `${result.levelMeta.label}`;
+  document.getElementById('completionBar').style.width = `${completion}%`;
+}
+
+function renderPatientsTable(records) {
+  const tbody = document.getElementById('patientsTableBody');
+  const query = document.getElementById('patientSearch')?.value.trim().toLowerCase() || '';
+  const filtered = records.filter((record) => {
+    const text = `${record.pseudonym_id} ${record.patient_type} ${record.latest_result?.stratification_label || ''}`.toLowerCase();
+    return text.includes(query);
+  });
+
+  tbody.innerHTML = '';
+  if (!filtered.length) {
+    const row = document.createElement('tr');
+    row.innerHTML = '<td colspan="4">Sin registros coincidentes.</td>';
+    tbody.appendChild(row);
+    return;
+  }
+
+  filtered.slice(0, 8).forEach((record) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${record.pseudonym_id}</td>
+      <td>${record.patient_type}</td>
+      <td>${record.latest_result?.stratification_label || 'Sin nivel'}</td>
+      <td>${formatDateTime(record.updated_at)}</td>
+    `;
+    tbody.appendChild(row);
+  });
 }
 
 function onSubmit(event) {
@@ -298,6 +346,7 @@ function onReset() {
   document.getElementById('validationMsg').textContent = '';
   document.querySelectorAll('.option-row.is-selected').forEach((row) => row.classList.remove('is-selected'));
   state.lastResult = null;
+  updateLiveAssessment();
 }
 
 function collectFormData() {
@@ -590,6 +639,9 @@ function refreshPatientsList() {
     });
 
   document.getElementById('storedCount').textContent = String(records.length);
+  document.getElementById('heroStoredCount').textContent = String(records.length);
+  renderPatientsTable(records);
+  updateLiveAssessment();
 }
 
 function formatDateTime(value) {
