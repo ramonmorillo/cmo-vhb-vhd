@@ -120,6 +120,27 @@ const APP_CONFIG = {
       ]
     }
   },
+  aiExtraction: {
+    patientTypePatterns: [
+      { value: 'VHB-VHD', patterns: ['vhb-vhd', 'vhd', 'delta', 'hepatitis d'] },
+      { value: 'VHB', patterns: ['vhb', 'hepatitis b'] }
+    ],
+    factorPatterns: {
+      cirrosis: ['cirrosis', 'fibrosis f4'],
+      cirrosis_descompensada: ['cirrosis descompensada', 'descompensación', 'ascitis', 'encefalopatía', 'hemorragia variceal'],
+      trasplante: ['trasplante hepático', 'transplante hepático', 'postrasplante', 'post-trasplante'],
+      vih_coinfeccion: ['vih', 'coinfección', 'coinfeccion', 'vhd', 'delta'],
+      insuficiencia_renal: ['insuficiencia renal', 'función renal alterada', 'funcion renal alterada', 'fg bajo', 'filtrado glomerular', 'erc'],
+      tratamiento_complejo: ['bulevirtida', 'interferón', 'interferon', 'nuevo fármaco', 'nueva comercialización'],
+      cambio_antiviral: ['inicio de antiviral', 'cambio de antiviral', 'cambio antiviral', 'últimos 12 meses', '<12 meses'],
+      polimedicacion: ['polimedicación', 'polimedicacion', '≥5 medicamentos', '5 medicamentos', 'cinco medicamentos'],
+      interacciones: ['interacción', 'interaccion', 'interacciones farmacológicas', 'interacciones significativas'],
+      adherencia_suboptima: ['adherencia subóptima', 'adherencia suboptima', 'mala adherencia', 'incumplimiento', 'olvidos frecuentes'],
+      autoadministracion: ['autoadministración', 'autoadministracion', 'dificultad para administrarse', 'problemas de administración'],
+      barreras_seguimiento: ['barreras de seguimiento', 'idioma', 'vulnerabilidad social', 'dificultad de acceso', 'acceso limitado']
+    },
+    negationTerms: ['no ', 'sin ', 'niega ', 'ausencia de ', 'descarta ']
+  },
   disclaimers: [
     'Herramienta de apoyo a la práctica clínica farmacéutica; no sustituye el juicio clínico profesional.',
     'Umbrales y pesos preliminares, pendientes de calibración y validación futura.',
@@ -246,11 +267,17 @@ function bindEvents() {
   const copyBtn = document.getElementById('copyBtn');
   const printBtn = document.getElementById('printBtn');
   const detailsPanel = document.getElementById('detailsPanel');
+  const runAiExtractionBtn = document.getElementById('runAiExtractionBtn');
+  const applyAiExtractionBtn = document.getElementById('applyAiExtractionBtn');
+  const clearAiExtractionBtn = document.getElementById('clearAiExtractionBtn');
 
   form.addEventListener('submit', onSubmit);
   resetBtn.addEventListener('click', onReset);
   copyBtn.addEventListener('click', copySummary);
   printBtn.addEventListener('click', () => window.print());
+  runAiExtractionBtn.addEventListener('click', onRunAiExtraction);
+  applyAiExtractionBtn.addEventListener('click', onApplyAiExtraction);
+  clearAiExtractionBtn.addEventListener('click', clearAiExtraction);
 
   detailsPanel.addEventListener('toggle', () => {
     localStorage.setItem(STORAGE_KEYS.detailsOpen, JSON.stringify(detailsPanel.open));
@@ -279,6 +306,123 @@ function bindEvents() {
     checkbox.addEventListener('change', updateLiveAssessment);
   });
   updateLiveAssessment();
+}
+
+function onRunAiExtraction() {
+  const text = document.getElementById('aiAnalysisInput').value.trim();
+  if (!text) {
+    setAiExtractionStatus('Pegue un análisis IA o resumen clínico no identificativo antes de extraer.', true);
+    return;
+  }
+
+  const extraction = extractFromAiAnalysis(text);
+  state.lastAiExtraction = extraction;
+  renderAiExtraction(extraction);
+  document.getElementById('applyAiExtractionBtn').disabled = false;
+  setAiExtractionStatus(`Extracción completada: ${extraction.detectedFactors.length} variable/s activas detectadas. Revise antes de aplicar.`);
+}
+
+function extractFromAiAnalysis(text) {
+  const normalized = normalizeText(text);
+  const patientType = detectPatientType(normalized);
+  const factors = {};
+  const rows = APP_CONFIG.domains.flatMap((domain) =>
+    domain.items.map((item) => {
+      const evidence = findEvidence(normalized, APP_CONFIG.aiExtraction.factorPatterns[item.id] || []);
+      factors[item.id] = evidence.detected;
+      return { ...item, domain: domain.title, detected: evidence.detected, confidence: evidence.confidence, evidence: evidence.match || 'No detectado' };
+    })
+  );
+
+  return {
+    patientType,
+    factors,
+    rows,
+    detectedFactors: rows.filter((row) => row.detected),
+    generatedAt: new Date().toISOString()
+  };
+}
+
+function normalizeText(text) {
+  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function detectPatientType(normalizedText) {
+  const match = APP_CONFIG.aiExtraction.patientTypePatterns.find((candidate) =>
+    candidate.patterns.some((pattern) => normalizedText.includes(normalizeText(pattern)))
+  );
+  return match?.value || '';
+}
+
+function findEvidence(normalizedText, patterns) {
+  for (const pattern of patterns) {
+    const normalizedPattern = normalizeText(pattern);
+    const index = normalizedText.indexOf(normalizedPattern);
+    if (index !== -1 && !isNegated(normalizedText, index)) {
+      return { detected: true, confidence: normalizedPattern.length > 12 ? 'Alta' : 'Media', match: pattern };
+    }
+  }
+  return { detected: false, confidence: 'No aplica', match: '' };
+}
+
+function isNegated(normalizedText, index) {
+  const windowStart = Math.max(0, index - 24);
+  const previousText = normalizedText.slice(windowStart, index);
+  return APP_CONFIG.aiExtraction.negationTerms.some((term) => previousText.endsWith(normalizeText(term)));
+}
+
+function renderAiExtraction(extraction) {
+  const summary = document.getElementById('aiExtractionSummary');
+  const tableWrap = document.getElementById('aiExtractionTableWrap');
+  const tbody = document.getElementById('aiExtractionTableBody');
+
+  summary.classList.remove('hidden');
+  tableWrap.classList.remove('hidden');
+  summary.innerHTML = `<strong>Tipo sugerido:</strong> ${extraction.patientType || 'No detectado'} · <strong>Variables activas:</strong> ${extraction.detectedFactors.length}`;
+  tbody.innerHTML = '';
+
+  extraction.rows.forEach((row) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${row.label}</td><td>${row.detected ? 'Detectada' : 'No detectada'}</td><td>${row.confidence}</td><td>${row.evidence}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function onApplyAiExtraction() {
+  const extraction = state.lastAiExtraction;
+  if (!extraction) {
+    setAiExtractionStatus('No hay extracción IA disponible para aplicar.', true);
+    return;
+  }
+
+  if (extraction.patientType) {
+    document.getElementById('patientType').value = extraction.patientType;
+  }
+
+  document.querySelectorAll('input[type="checkbox"][data-item-id]').forEach((checkbox) => {
+    const active = Boolean(extraction.factors[checkbox.dataset.itemId]);
+    checkbox.checked = active;
+    checkbox.closest('.option-row')?.classList.toggle('is-selected', active);
+  });
+
+  updateLiveAssessment();
+  setAiExtractionStatus('Variables aplicadas al formulario. Revise el resultado y pulse “Estratificar paciente”.');
+  document.getElementById('stratificationSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function clearAiExtraction() {
+  state.lastAiExtraction = null;
+  document.getElementById('aiAnalysisInput').value = '';
+  document.getElementById('applyAiExtractionBtn').disabled = true;
+  document.getElementById('aiExtractionSummary').classList.add('hidden');
+  document.getElementById('aiExtractionTableWrap').classList.add('hidden');
+  setAiExtractionStatus('');
+}
+
+function setAiExtractionStatus(message, isError = false) {
+  const el = document.getElementById('aiExtractionStatus');
+  el.textContent = message;
+  el.classList.toggle('error', isError);
 }
 
 function updateLiveAssessment() {

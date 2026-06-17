@@ -31,6 +31,7 @@
 
     <nav class="app-nav" aria-label="Navegación principal">
       <a href="#stratificationSection">Estratificación</a>
+      <a href="#aiExtractionSection">Extracción IA</a>
       <a href="#patientSection">Pacientes</a>
       <a href="#resultCard">Informe</a>
       <a href="#researchSection">Investigación</a>
@@ -92,6 +93,51 @@
             <button type="reset" id="resetBtn" class="btn ghost">Nueva estratificación</button>
           </div>
         </form>
+      </section>
+
+
+      <section id="aiExtractionSection" class="card">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Módulo IA</p>
+            <h2>Extracción asistida desde análisis de inteligencia artificial</h2>
+          </div>
+          <span class="ai-pill">Revisión humana obligatoria</span>
+        </div>
+        <p class="muted">
+          Pegue un resumen clínico o salida generada por IA sin identificadores directos. El módulo detecta variables
+          compatibles con la escala, muestra evidencias y permite volcarlas al formulario para estratificar.
+        </p>
+
+        <div class="ai-grid">
+          <label>
+            Texto de análisis IA / informe no identificativo
+            <textarea id="aiAnalysisInput" rows="8" placeholder="Ej.: Paciente VHB-VHD con cirrosis descompensada, función renal alterada y polimedicación..."></textarea>
+          </label>
+          <aside class="ai-help">
+            <h3>Uso seguro</h3>
+            <ul>
+              <li>No pegue nombre, DNI, teléfono, dirección ni correo.</li>
+              <li>Revise manualmente cada variable antes de aplicar.</li>
+              <li>La detección es heurística local; no envía datos a servidores.</li>
+            </ul>
+          </aside>
+        </div>
+
+        <div class="actions compact">
+          <button id="runAiExtractionBtn" class="btn primary" type="button">Analizar y extraer variables</button>
+          <button id="applyAiExtractionBtn" class="btn secondary" type="button" disabled>Aplicar al formulario</button>
+          <button id="clearAiExtractionBtn" class="btn ghost" type="button">Limpiar módulo IA</button>
+        </div>
+
+        <p id="aiExtractionStatus" class="status" aria-live="polite"></p>
+        <div id="aiExtractionSummary" class="ai-summary hidden" aria-live="polite"></div>
+        <div class="table-wrap hidden" id="aiExtractionTableWrap">
+          <table class="patients-table" aria-label="Variables extraídas por análisis IA">
+            <thead><tr><th>Variable</th><th>Estado</th><th>Confianza</th><th>Evidencia</th></tr></thead>
+            <tbody id="aiExtractionTableBody"></tbody>
+          </table>
+        </div>
       </section>
 
       <section id="patientSection" class="card">
