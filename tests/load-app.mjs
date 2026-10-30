@@ -15,7 +15,7 @@ export function loadApp() {
   });
   vm.runInContext(body, ctx, { filename: 'app.js' });
   return vm.runInContext(
-    '({ APP_CONFIG, STORAGE_KEYS, calculateStratification, determineLevelByThreshold, applyClinicalOverrides, findItem, extractFromAiAnalysis, generateStablePseudoId, buildResearchDatasets })',
+    '({ APP_CONFIG, STORAGE_KEYS, calculateStratification, determineLevelByThreshold, applyClinicalOverrides, findItem, extractFromAiAnalysis, generatePseudonym, buildResearchDatasets })',
     ctx
   );
 }

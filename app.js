@@ -674,7 +674,7 @@ function onSavePatient() {
   const now = new Date().toISOString();
   const record = {
     id: generateId('pat'),
-    pseudonym_id: generateStablePseudoId(state.lastResult.patientId),
+    pseudonym_id: generatePseudonym(state.lastResult.patientId, patientRepository.list()),
     patient_identifier_local: state.lastResult.patientId || null,
     patient_type: state.lastResult.patientType,
     notes_non_identifying: state.lastResult.notes || null,
@@ -813,14 +813,35 @@ function generateId(prefix) {
   return `${prefix}-${uid}`;
 }
 
-function generateStablePseudoId(seed) {
-  const source = seed || `${Date.now()}-${Math.random()}`;
-  let hash = 0;
-  for (let i = 0; i < source.length; i += 1) {
-    hash = (hash << 5) - hash + source.charCodeAt(i);
-    hash |= 0;
+/*
+ * Seudónimo de investigación (patient_id de las exportaciones).
+ * Aleatorio: no se deriva del identificador local, por lo que no puede revertirse.
+ * Estable: si ya hay un registro con el mismo identificador local, se reutiliza su seudónimo.
+ * Los registros guardados antes de este cambio conservan el seudónimo que ya tenían.
+ */
+function generatePseudonym(localId, records) {
+  const key = (localId || '').trim();
+  if (key) {
+    const previous = records.find((record) => record.patient_identifier_local === key && record.pseudonym_id);
+    if (previous) return previous.pseudonym_id;
   }
-  return `PSEUDO-${Math.abs(hash).toString(36).padStart(8, '0').toUpperCase()}`;
+  const used = new Set(records.map((record) => record.pseudonym_id));
+  let candidate;
+  do {
+    candidate = `PSEUDO-${randomBase36(10)}`;
+  } while (used.has(candidate));
+  return candidate;
+}
+
+function randomBase36(length) {
+  const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const bytes = new Uint8Array(length);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(bytes, (b) => alphabet[b % 36]).join('');
 }
 
 function getSelectedRecordsForExport() {

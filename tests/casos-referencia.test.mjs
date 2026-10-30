@@ -118,12 +118,16 @@ test('extracción heurística: negación en la frase, palabras completas y todas
   assert.deepEqual(detect('Barreras de seguimiento por idioma'), ['barreras_seguimiento']);
 });
 
-test('HALLAZGO documentado: el pseudónimo es un hash de 32 bits sin sal del identificador local', () => {
-  // Comportamiento actual (no corregido): determinista y reproducible por fuerza bruta sobre el espacio de
-  // identificadores (p. ej., NHC numéricos). Es el patient_id de todas las exportaciones de investigación.
-  assert.equal(A.generateStablePseudoId('abc'), 'PSEUDO-000022CI');
-  assert.equal(A.generateStablePseudoId('patient-1'), 'PSEUDO-005OKA6V');
-  assert.equal(A.generateStablePseudoId('abc'), A.generateStablePseudoId('abc'));
+test('seudónimo aleatorio: no se deriva del identificador local y se reutiliza para el mismo paciente', () => {
+  const a = A.generatePseudonym('NHC-123', []);
+  const b = A.generatePseudonym('NHC-123', []);
+  assert.match(a, /^PSEUDO-[0-9A-Z]{10}$/);
+  assert.notEqual(a, b, 'sin registros previos, el mismo identificador no produce el mismo seudónimo (no reversible)');
+  const previos = [{ patient_identifier_local: 'NHC-123', pseudonym_id: 'PSEUDO-000022CI' }];
+  assert.equal(A.generatePseudonym('NHC-123', previos), 'PSEUDO-000022CI', 'se conserva el de un registro existente');
+  assert.equal(A.generatePseudonym(' NHC-123 ', previos), 'PSEUDO-000022CI');
+  assert.notEqual(A.generatePseudonym('', previos), 'PSEUDO-000022CI', 'sin identificador nunca se reutiliza');
+  assert.notEqual(A.generatePseudonym('NHC-999', previos), 'PSEUDO-000022CI');
 });
 
 test('estructura de exportación de investigación: columnas, exclusión de identificadores y diccionario', () => {
