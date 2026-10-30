@@ -1,106 +1,61 @@
-/* CMO Suite · capa visual común basada en CMO Migraña */
-:root {
-  --cmo-accent: #79b6ff;
-  --cmo-accent-dark: #255e9c;
-  --cmo-accent-soft: #e8f2ff;
-  --cmo-bg-a: #183f72;
-  --cmo-bg-b: #62501d;
-  --cmo-focus: #ffbf47;
-  --cmo-panel: #f8fbff;
-  --cmo-line: #d8e2f0;
-  --cmo-ink: #172033;
-  --cmo-muted: #5b6880;
-  --cmo-radius: 28px;
-  --cmo-shadow: 0 24px 70px #02081740;
+/* CMO Design System 0.2.0 · tema «Estratos» de CMO-HBV/HDV Pro
+   Se carga después de styles.css. Solo presentación: no altera textos, puntuaciones
+   ni los colores semánticos de nivel (.level-1/2/3 y .legend-1/2/3: --high/--warn/--ok).
+   Tokens: vendor/cmo-ds/ (copia fijada, ver CMO-DS-VERSION.json). */
+:root { --cmo-accent: #9a3412; } /* submarca VHB-VHD: solo identidad, nunca resultados */
+
+html { scroll-behavior: smooth; }
+body { background: var(--cmo-paper); color: var(--cmo-ink); }
+
+/* Cabecera */
+.hero { background: var(--cmo-surface); border-color: var(--cmo-rule); border-radius: var(--cmo-radius-md); box-shadow: var(--cmo-shadow-1); }
+#appName::before { /* franja de estratos C·M·O (decorativa) */
+  content: ""; display: block; width: 160px; height: 4px; margin-bottom: var(--cmo-space-4);
+  background: linear-gradient(90deg, var(--cmo-c) 0 50%, transparent 50% 52%, var(--cmo-m) 52% 80%, transparent 80% 82%, var(--cmo-o) 82%);
 }
-html {
-  scroll-behavior: smooth;
-}
-body {
-  min-height: 100vh;
-  background: radial-gradient(
-    circle at 15% 8%,
-    var(--cmo-bg-a) 0,
-    #101b33 36%,
-    var(--cmo-bg-b) 100%
-  ) !important;
-  color: var(--cmo-ink);
-}
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(#ffffff08 1px, transparent 1px),
-    linear-gradient(90deg, #ffffff08 1px, transparent 1px);
-  background-size: 44px 44px;
-  pointer-events: none;
-}
-.hero,
-.app-nav,
-.layout,
-.footer {
-  position: relative;
-}
-body > .hero {
-  padding: 30px !important;
-  border: 1px solid #ffffff2b !important;
-  border-radius: var(--cmo-radius) !important;
-  box-shadow: var(--cmo-shadow) !important;
-  background: linear-gradient(135deg, #204d84, #2d6ba9 55%, #7a6424) !important;
-  color: #fff;
-}
-.hero h1 {
-  font-size: clamp(2.6rem, 6vw, 5rem) !important;
-  line-height: 0.95;
-  letter-spacing: -0.055em;
-  color: #fff;
-}
-.hero .subtitle,
-.hero .eyebrow {
-  color: #edf6ff !important;
-}
-:where(
-  .card,
-  .live-panel,
-  .domain,
-  .legend-item,
-  .score-item,
-  .report-block,
-  .ai-help
-) {
-  border-radius: 22px !important;
-  border-color: var(--cmo-line) !important;
-  box-shadow: 0 16px 42px #0208171c !important;
-}
-.hero.card {
-  border-color: #ffffff2b !important;
-}
-.btn,
-button {
-  border-radius: 999px !important;
-}
-input,
-select,
-textarea {
-  border-radius: 13px !important;
-}
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 4px solid var(--cmo-focus) !important;
-  outline-offset: 2px;
-}
-.footer {
-  border-radius: 22px !important;
-  background: #f8fbfff0 !important;
-  color: var(--cmo-ink) !important;
-  box-shadow: 0 16px 42px #0208171c !important;
-}
+.hero h1 { font-family: var(--cmo-font-serif); font-weight: 600; letter-spacing: -.02em; color: var(--cmo-ink); }
+.hero .subtitle { color: var(--cmo-ink-muted); }
+.eyebrow, .mini-label { color: var(--cmo-accent); }
+.product-pill { background: var(--cmo-ink); box-shadow: none; }
+.version-pill, .live-score, .tag { background: var(--cmo-brand-soft); color: var(--cmo-brand-strong); border-color: transparent; }
+.hero-kpis article { background: var(--cmo-surface-sunk); border-color: var(--cmo-rule); border-radius: var(--cmo-radius-sm); }
+.hero-kpis strong { color: var(--cmo-ink); font-variant-numeric: tabular-nums; }
+
+/* Navegación */
+.app-nav { background: var(--cmo-surface); border-color: var(--cmo-rule); box-shadow: var(--cmo-shadow-1); backdrop-filter: none; }
+.app-nav a { color: var(--cmo-brand-strong); }
+.app-nav a:hover, .app-nav a:focus-visible { background: var(--cmo-brand-soft); }
+.app-nav a:focus-visible { outline: 3px solid var(--cmo-focus); outline-offset: 2px; }
+
+/* Superficies */
+.layout { grid-template-columns: minmax(0, 1fr); } /* evita que las tablas anchas desborden la página en móvil (antes: +97 px a 375 px) */
+.card { border-color: var(--cmo-rule); border-radius: var(--cmo-radius-md); box-shadow: var(--cmo-shadow-1); }
+.domain, .legend-item, .score-item, .report-block, .live-panel, .ai-help, .hero-kpis article { border-color: var(--cmo-rule); }
+h2 { font-family: var(--cmo-font-serif); font-weight: 600; color: var(--cmo-ink); }
+
+/* Formularios: borde ≥ 3:1 y foco visible de 3 px */
+input, select, textarea { border-color: var(--cmo-control-border); border-radius: var(--cmo-radius-sm); color: var(--cmo-ink); }
+input:hover, select:hover, textarea:hover { border-color: var(--cmo-ink-muted); }
+input:focus, select:focus, textarea:focus { outline: 3px solid var(--cmo-focus); outline-offset: 2px; border-color: var(--cmo-control-border); box-shadow: none; }
+.option-main input[type='checkbox'] { accent-color: var(--cmo-brand-strong); }
+
+/* Botones: objetivo táctil de 44 px */
+.btn { min-height: 44px; border-radius: var(--cmo-radius-sm); }
+.btn:hover { transform: none; }
+.btn:focus-visible { outline: 3px solid var(--cmo-focus); outline-offset: 2px; box-shadow: none; }
+.btn.primary { background: var(--cmo-brand-strong); box-shadow: none; }
+.btn.primary:hover { background: var(--cmo-ink); }
+.btn.ghost { background: var(--cmo-surface); color: var(--cmo-ink); border-color: var(--cmo-control-border); }
+.btn.secondary { background: var(--cmo-brand-soft); color: var(--cmo-brand-strong); border-color: var(--cmo-rule); }
+summary:focus-visible { outline: 3px solid var(--cmo-focus); outline-offset: 2px; }
+
+/* Pie y firma de autoría */
+.footer { color: var(--cmo-ink-muted); border-top: 1px solid var(--cmo-rule); padding-top: var(--cmo-space-5); }
+.footer cmo-author-signature { display: block; margin-top: var(--cmo-space-4); }
+.footer a { color: var(--cmo-brand-strong); }
+
 @media (prefers-reduced-motion: reduce) {
-  * {
-    scroll-behavior: auto !important;
-    transition: none !important;
-  }
+  html { scroll-behavior: auto; }
+  .btn, input, select, textarea, .option-row { transition: none; }
 }
+@media print { #appName::before { display: none; } .hero, .card { box-shadow: none; } }

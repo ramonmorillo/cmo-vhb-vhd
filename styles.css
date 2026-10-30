@@ -1,15 +1,16 @@
-@import url("./cmo-visual.css");
+@import url("./vendor/cmo-ds/cmo-tokens.css");
+@import url("./vendor/cmo-ds/cmo-components.css");
 
 :root {
-  --bg: #eef3fa;
-  --bg-soft: #e6edf8;
-  --card: #ffffff;
-  --text: #13263e;
-  --muted: #4e6280;
-  --primary: #195fa8;
-  --primary-strong: #114b86;
-  --primary-soft: #dfeafb;
-  --border: #cedaea;
+  --bg: var(--cmo-paper);
+  --bg-soft: var(--cmo-paper);
+  --card: var(--cmo-surface);
+  --text: var(--cmo-ink);
+  --muted: var(--cmo-ink-muted);
+  --primary: var(--cmo-brand-strong);
+  --primary-strong: var(--cmo-ink);
+  --primary-soft: var(--cmo-brand-soft);
+  --border: var(--cmo-rule);
   --ok: #196f3d;
   --warn: #8d6505;
   --high: #a31745;
@@ -24,7 +25,7 @@
 
 body {
   margin: 0;
-  font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: var(--cmo-font-sans);
   background:
     radial-gradient(circle at 8% 12%, rgba(74, 131, 201, 0.11) 0, transparent 28%),
     radial-gradient(circle at 90% 18%, rgba(35, 104, 186, 0.1) 0, transparent 25%),

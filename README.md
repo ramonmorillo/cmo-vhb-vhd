@@ -60,3 +60,7 @@ Las pruebas marcadas como **HALLAZGO** fijan comportamientos actuales pendientes
 1. Con una regla de seguridad, el texto del nivel cita un rango de puntos que no corresponde a la puntuación (p. ej., 2 puntos → «Nivel 2 (… 8-12 puntos)»).
 2. Extracción heurística: la negación solo se reconoce si precede inmediatamente al término («sin signos de descompensación» → detectada); el patrón `erc` coincide como subcadena («tercera», «cerca» → insuficiencia renal); «últimos 12 meses» activa «cambio de antiviral»; solo se examina la primera aparición de cada patrón; el tipo de paciente ignora la negación («VHB sin VHD» → VHB-VHD).
 3. `pseudonym_id` es un hash de 32 bits sin sal del identificador local: determinista y reproducible por fuerza bruta sobre identificadores de espacio pequeño (p. ej., NHC numéricos).
+
+## Identidad visual (CMO Design System)
+
+Copia fijada del CMO Design System en `vendor/cmo-ds/` (`CMO-DS-VERSION.json` con SHA-256; prueba `tests/cmo-ds.test.mjs`). `cmo-visual.css` es el tema «Estratos» y se carga después de `styles.css`. La firma `<cmo-author-signature>` del pie lee los metadatos de `cmo-app-meta` en `index.html` (sin versión declarada en el código: `appVersion: null`; la fecha solo se fija en el commit de publicación).

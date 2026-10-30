@@ -4,9 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CMO-HBV/HDV Pro</title>
+    <link rel="icon" href="vendor/cmo-ds/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#14203a" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="cmo-visual.css" />
+    <script type="application/json" id="cmo-app-meta">
+      {
+        "schema": "cmo-app-meta/1",
+        "id": "cmo-vhb-vhd",
+        "name": "CMO-HBV/HDV Pro",
+        "appVersion": null,
+        "algorithm": null,
+        "status": "draft",
+        "releaseDate": null,
+        "clinicalReviewDate": null,
+        "credits": [{ "role": "Desarrollo digital", "name": "Dr. Ramón Morillo Verdugo" }],
+        "model": "Basado en el modelo CMO: Capacidad, Motivación y Oportunidad.",
+        "website": "https://ramonmorillo.es",
+        "copyright": null,
+        "designSystem": "0.2.0"
+      }
+    </script>
+    <script type="module" src="vendor/cmo-ds/cmo-author-signature.js"></script>
   </head>
-  <body>
+  <body class="cmo-scope">
     <header class="hero card">
       <div class="hero-topline">
         <span class="product-pill">CMO Suite</span>
@@ -131,7 +152,7 @@
 
         <p id="aiExtractionStatus" class="status" aria-live="polite"></p>
         <div id="aiExtractionSummary" class="ai-summary hidden" aria-live="polite"></div>
-        <div class="table-wrap hidden" id="aiExtractionTableWrap">
+        <div class="table-wrap hidden" id="aiExtractionTableWrap" tabindex="0" role="region" aria-label="Variables detectadas por la extracción asistida">
           <table class="patients-table" aria-label="Variables extraídas por análisis IA">
             <thead><tr><th>Variable</th><th>Estado</th><th>Confianza</th><th>Evidencia</th></tr></thead>
             <tbody id="aiExtractionTableBody"></tbody>
@@ -171,7 +192,7 @@
           </div>
         </div>
         <p id="storageStatus" class="status" aria-live="polite"></p>
-        <div class="table-wrap">
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Pacientes guardados">
           <table class="patients-table" aria-label="Resumen de pacientes guardados">
             <thead><tr><th>Paciente</th><th>Tipo</th><th>Nivel</th><th>Actualizado</th></tr></thead>
             <tbody id="patientsTableBody"><tr><td colspan="4">Sin registros guardados.</td></tr></tbody>
@@ -283,6 +304,9 @@
         No sustituye el juicio clínico · No es un producto sanitario certificado · Evitar datos identificativos
         directos · Creado por Ramón Morillo — Junio 2026.
       </p>
+      <cmo-author-signature meta="cmo-app-meta">
+        <p>Desarrollo digital: Dr. Ramón Morillo Verdugo · <a href="https://ramonmorillo.es">ramonmorillo.es</a></p>
+      </cmo-author-signature>
     </footer>
 
     <script src="vendor/xlsx/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw"></script>
