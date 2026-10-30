@@ -6,11 +6,10 @@ import crypto from 'node:crypto';
 const read = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8');
 const meta = JSON.parse(/<script type="application\/json" id="cmo-app-meta">([\s\S]*?)<\/script>/.exec(read('../index.html'))[1]);
 
-test('firma CMO: sin versión inventada (el código no declara versión de la app ni del algoritmo)', () => {
+test('firma CMO: la versión de la firma es la declarada en package.json; sin versión de algoritmo', () => {
   assert.equal(meta.schema, 'cmo-app-meta/1');
-  assert.doesNotMatch(read('../app.js'), /\b(APP_VERSION|appVersion|MODEL_VERSION)\b/);
-  assert.equal(meta.appVersion, null);
-  assert.equal(meta.algorithm, null);
+  assert.equal(meta.appVersion, JSON.parse(read('../package.json')).version);
+  assert.equal(meta.algorithm, null, 'el código no declara versión del algoritmo');
 });
 
 test('firma CMO: fecha solo con estado publicado y nunca generada en tiempo de ejecución', () => {
