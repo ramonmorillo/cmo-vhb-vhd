@@ -2,7 +2,7 @@
 
 ## 1.0.0 — 2026-10-30 — Primera versión declarada
 
-Primera versión declarada (confirmada por el autor): el repositorio no declaraba ninguna versión. Se declara 1.0.0 en `package.json` y `cmo-app-meta` (la prueba exige que coincidan); `status: "released"`, `releaseDate: "2026-10-30"`. Sin versión de algoritmo declarada. Sin cambios en `APP_CONFIG`.
+Primera versión declarada (confirmada por el autor): el repositorio no declaraba ninguna versión. Se declara 1.0.0 en `package.json` y `cmo-app-meta` (la prueba exige que coincidan); `status: "released"`, `releaseDate: "2026-10-30"`. Sin versión de algoritmo declarada. Sin cambios en pesos, umbrales ni reglas de `APP_CONFIG`.
 
 Incluye lo fusionado el 2026-10-30:
 - Casos de referencia (`npm test`), PR #10.
