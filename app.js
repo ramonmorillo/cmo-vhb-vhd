@@ -132,7 +132,7 @@ const APP_CONFIG = {
       vih_coinfeccion: ['vih', 'coinfección', 'coinfeccion', 'vhd', 'delta'],
       insuficiencia_renal: ['insuficiencia renal', 'función renal alterada', 'funcion renal alterada', 'fg bajo', 'filtrado glomerular', 'erc'],
       tratamiento_complejo: ['bulevirtida', 'interferón', 'interferon', 'nuevo fármaco', 'nueva comercialización'],
-      cambio_antiviral: ['inicio de antiviral', 'cambio de antiviral', 'cambio antiviral', 'últimos 12 meses', '<12 meses'],
+      cambio_antiviral: ['inicio de antiviral', 'cambio de antiviral', 'cambio antiviral'],
       polimedicacion: ['polimedicación', 'polimedicacion', '≥5 medicamentos', '5 medicamentos', 'cinco medicamentos'],
       interacciones: ['interacción', 'interaccion', 'interacciones farmacológicas', 'interacciones significativas'],
       adherencia_suboptima: ['adherencia subóptima', 'adherencia suboptima', 'mala adherencia', 'incumplimiento', 'olvidos frecuentes'],
@@ -348,27 +348,32 @@ function normalizeText(text) {
 }
 
 function detectPatientType(normalizedText) {
-  const match = APP_CONFIG.aiExtraction.patientTypePatterns.find((candidate) =>
-    candidate.patterns.some((pattern) => normalizedText.includes(normalizeText(pattern)))
-  );
+  const match = APP_CONFIG.aiExtraction.patientTypePatterns.find((candidate) => findEvidence(normalizedText, candidate.patterns).detected);
   return match?.value || '';
 }
 
+/* Busca cada patrón como palabra o expresión completa (no como subcadena) y en todas sus apariciones;
+ * basta una aparición no negada para detectarlo. */
 function findEvidence(normalizedText, patterns) {
   for (const pattern of patterns) {
     const normalizedPattern = normalizeText(pattern);
-    const index = normalizedText.indexOf(normalizedPattern);
-    if (index !== -1 && !isNegated(normalizedText, index)) {
-      return { detected: true, confidence: normalizedPattern.length > 12 ? 'Alta' : 'Media', match: pattern };
+    const escaped = normalizedPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(?<![a-z0-9])${escaped}(?![a-z0-9])`, 'g');
+    for (const match of normalizedText.matchAll(regex)) {
+      if (!isNegated(normalizedText, match.index)) {
+        return { detected: true, confidence: normalizedPattern.length > 12 ? 'Alta' : 'Media', match: pattern };
+      }
     }
   }
   return { detected: false, confidence: 'No aplica', match: '' };
 }
 
+/* Negado si un término de negación aparece antes, dentro de la misma frase o inciso
+ * (se corta en . , ; :, saltos de línea y «pero», «aunque», «sino», «sin embargo») y en los 40 caracteres previos. */
 function isNegated(normalizedText, index) {
-  const windowStart = Math.max(0, index - 24);
-  const previousText = normalizedText.slice(windowStart, index);
-  return APP_CONFIG.aiExtraction.negationTerms.some((term) => previousText.endsWith(normalizeText(term)));
+  const windowText = normalizedText.slice(Math.max(0, index - 40), index);
+  const clause = ` ${windowText.split(/[.,;:\n]| pero | aunque | sino | sin embargo /).pop()}`;
+  return APP_CONFIG.aiExtraction.negationTerms.some((term) => clause.includes(` ${normalizeText(term)}`));
 }
 
 function renderAiExtraction(extraction) {
@@ -541,7 +546,12 @@ function calculateStratification(data) {
   const overrideResolution = applyClinicalOverrides(baseLevel.level, data.factors);
 
   const assignedLevel = overrideResolution.finalLevel;
-  const levelMeta = APP_CONFIG.thresholds.find((x) => x.level === assignedLevel);
+  const thresholdMeta = APP_CONFIG.thresholds.find((x) => x.level === assignedLevel);
+  // Si una regla de seguridad eleva el nivel, la etiqueta no cita el rango de puntos del umbral (no corresponde).
+  const levelMeta =
+    assignedLevel === baseLevel.level
+      ? thresholdMeta
+      : { ...thresholdMeta, label: thresholdMeta.label.replace(/, [^,()]*puntos\)$/, ', asignado por regla de seguridad)') };
   const reevalText = `${APP_CONFIG.followUp.baseline} ${APP_CONFIG.followUp[assignedLevel]}`;
 
   const driverList = data.activeFactors.map((f) => f.label);

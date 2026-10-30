@@ -74,11 +74,14 @@ test('reglas de seguridad: elevan a Nivel 2 como mínimo y nunca rebajan un Nive
   assert.equal(alto.overrideResolution.triggered.length, 2);
 });
 
-test('HALLAZGO documentado: con regla de seguridad, el texto del nivel cita un rango que no corresponde a la puntuación', () => {
-  // Comportamiento actual (no corregido): 2 puntos → «Nivel 2 (complejidad intermedia, 8-12 puntos)».
+test('con regla de seguridad, la etiqueta no cita un rango de puntos que no corresponde', () => {
+  // PROPUESTA (pendiente de revisión clínica): antes, 2 puntos → «Nivel 2 (complejidad intermedia, 8-12 puntos)».
   const r = run(['cirrosis_descompensada']);
-  assert.equal(r.levelMeta.label, 'Nivel 2 (complejidad intermedia, 8-12 puntos)');
-  assert.match(r.narrative, /clasificado como Nivel 2 \(complejidad intermedia, 8-12 puntos\) .*puntuación total de 2 puntos/);
+  assert.equal(r.assignedLevel, 2);
+  assert.equal(r.levelMeta.label, 'Nivel 2 (complejidad intermedia, asignado por regla de seguridad)');
+  assert.match(r.narrative, /clasificado como Nivel 2 \(complejidad intermedia, asignado por regla de seguridad\) .*puntuación total de 2 puntos/);
+  assert.equal(run(['cirrosis', 'adherencia_suboptima']).levelMeta.label, 'Nivel 2 (complejidad intermedia, 8-12 puntos)', 'sin regla, la etiqueta no cambia');
+  assert.equal(run(ALL).levelMeta.label, 'Nivel 1 (alta complejidad / prioritario, ≥13 puntos)');
 });
 
 test('seguimiento y plan por nivel', () => {
@@ -97,14 +100,20 @@ test('extracción heurística: detección básica y negación inmediata', () => 
   assert.equal(A.extractFromAiAnalysis('texto sin datos').patientType, '');
 });
 
-test('HALLAZGO documentado: falsos positivos y negativos de la extracción heurística', () => {
-  // Comportamiento actual (no corregido). La extracción solo prellena tras revisión humana, pero puede inducir error.
-  assert.deepEqual(detect('Paciente sin signos de descompensación'), ['cirrosis_descompensada'], 'negación no inmediata');
-  assert.deepEqual(detect('no presenta cirrosis'), ['cirrosis'], 'negación no inmediata');
-  assert.deepEqual(detect('Tercera visita, cerca del hospital'), ['insuficiencia_renal'], 'patrón «erc» como subcadena');
-  assert.deepEqual(detect('Sin ingresos en los últimos 12 meses'), ['cambio_antiviral'], 'patrón temporal genérico');
-  assert.deepEqual(detect('No cirrosis. Cirrosis confirmada por biopsia'), [], 'solo se examina la primera aparición');
-  assert.equal(A.extractFromAiAnalysis('VHB sin VHD').patientType, 'VHB-VHD', 'el tipo de paciente ignora la negación');
+test('extracción heurística: negación en la frase, palabras completas y todas las apariciones', () => {
+  // PROPUESTA (pendiente de revisión clínica): corrige los falsos positivos y negativos documentados en el PR #10.
+  assert.deepEqual(detect('Paciente sin signos de descompensación'), [], 'negación no inmediata');
+  assert.deepEqual(detect('no presenta cirrosis'), [], 'negación no inmediata');
+  assert.deepEqual(detect('Tercera visita, cerca del hospital'), [], '«erc» solo como palabra completa');
+  assert.deepEqual(detect('ERC estadio 3'), ['insuficiencia_renal']);
+  assert.deepEqual(detect('Sin ingresos en los últimos 12 meses'), [], 'sin patrón temporal genérico');
+  assert.deepEqual(detect('cambio de antiviral hace 6 meses'), ['cambio_antiviral']);
+  assert.deepEqual(detect('No cirrosis. Cirrosis confirmada por biopsia'), ['cirrosis'], 'se examinan todas las apariciones');
+  assert.deepEqual(detect('No fuma, cirrosis compensada'), ['cirrosis'], 'la negación no cruza la coma');
+  assert.deepEqual(detect('No descompensación previa pero ascitis actual'), ['cirrosis_descompensada'], 'ni «pero»');
+  assert.equal(A.extractFromAiAnalysis('VHB sin VHD').patientType, 'VHB', 'el tipo de paciente respeta la negación');
+  assert.deepEqual(detect('VHB sin VHD'), []);
+  assert.equal(A.extractFromAiAnalysis('Paciente con VHB y VHD, sin trasplante hepático').patientType, 'VHB-VHD');
 });
 
 test('HALLAZGO documentado: el pseudónimo es un hash de 32 bits sin sal del identificador local', () => {
