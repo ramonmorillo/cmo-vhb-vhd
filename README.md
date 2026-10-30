@@ -12,12 +12,12 @@ Aplicación web estática para estratificación farmacéutica preliminar en paci
 
 1. Descarga o clona el repositorio.
 2. Abre `index.html` en tu navegador.
-3. Opcionalmente pega un resumen no identificativo en **Extracción asistida desde análisis de inteligencia artificial** para prellenar variables.
+3. Opcionalmente pega un resumen no identificativo en **Extracción asistida de variables (reglas locales)** para prellenar variables.
 4. Completa o revisa el formulario y pulsa **Estratificar paciente**.
 5. Usa **Guardar paciente** para persistir en el mismo navegador/equipo.
 6. Usa **Extracción de datos para investigación** para exportar en Excel, CSV o JSON.
 
-## Capacidades de extracción asistida por IA
+## Capacidades de extracción asistida (reglas locales)
 
 - Módulo local para pegar análisis de IA o resúmenes clínicos no identificativos.
 - Detección heurística de tipo de paciente y variables clínicas de la escala con evidencia y confianza orientativa.

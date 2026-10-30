@@ -391,7 +391,7 @@ function renderAiExtraction(extraction) {
 function onApplyAiExtraction() {
   const extraction = state.lastAiExtraction;
   if (!extraction) {
-    setAiExtractionStatus('No hay extracción IA disponible para aplicar.', true);
+    setAiExtractionStatus('No hay extracción disponible para aplicar.', true);
     return;
   }
 
