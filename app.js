@@ -137,7 +137,7 @@ const APP_CONFIG = {
       interacciones: ['interacción', 'interaccion', 'interacciones farmacológicas', 'interacciones significativas'],
       adherencia_suboptima: ['adherencia subóptima', 'adherencia suboptima', 'mala adherencia', 'incumplimiento', 'olvidos frecuentes'],
       autoadministracion: ['autoadministración', 'autoadministracion', 'dificultad para administrarse', 'problemas de administración'],
-      barreras_seguimiento: ['barreras de seguimiento', 'idioma', 'vulnerabilidad social', 'dificultad de acceso', 'acceso limitado']
+      barreras_seguimiento: ['barreras de seguimiento', 'vulnerabilidad social', 'dificultad de acceso', 'acceso limitado']
     },
     negationTerms: ['no ', 'sin ', 'niega ', 'ausencia de ', 'descarta ']
   },

@@ -114,6 +114,8 @@ test('extracción heurística: negación en la frase, palabras completas y todas
   assert.equal(A.extractFromAiAnalysis('VHB sin VHD').patientType, 'VHB', 'el tipo de paciente respeta la negación');
   assert.deepEqual(detect('VHB sin VHD'), []);
   assert.equal(A.extractFromAiAnalysis('Paciente con VHB y VHD, sin trasplante hepático').patientType, 'VHB-VHD');
+  assert.deepEqual(detect('Idioma materno: español'), [], '«idioma» ya no activa barreras (decisión del autor)');
+  assert.deepEqual(detect('Barreras de seguimiento por idioma'), ['barreras_seguimiento']);
 });
 
 test('HALLAZGO documentado: el pseudónimo es un hash de 32 bits sin sal del identificador local', () => {
