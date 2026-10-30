@@ -144,7 +144,7 @@ const APP_CONFIG = {
   disclaimers: [
     'Herramienta de apoyo a la práctica clínica farmacéutica; no sustituye el juicio clínico profesional.',
     'Umbrales y pesos preliminares, pendientes de calibración y validación futura.',
-    'No es un producto sanitario.',
+    'No es un producto sanitario certificado.',
     'Evite introducir datos identificativos directos del paciente.'
   ]
 };
