@@ -1,0 +1,118 @@
+{
+  "thresholds": [
+    {
+      "min": 13,
+      "level": 1,
+      "label": "Nivel 1 (alta complejidad / prioritario, ≥13 puntos)"
+    },
+    {
+      "min": 8,
+      "level": 2,
+      "label": "Nivel 2 (complejidad intermedia, 8-12 puntos)"
+    },
+    {
+      "min": 0,
+      "level": 3,
+      "label": "Nivel 3 (baja complejidad, 0-7 puntos)"
+    }
+  ],
+  "domains": [
+    {
+      "key": "severidad",
+      "items": [
+        [
+          "cirrosis",
+          4
+        ],
+        [
+          "cirrosis_descompensada",
+          2
+        ],
+        [
+          "trasplante",
+          3
+        ]
+      ]
+    },
+    {
+      "key": "comorbilidad",
+      "items": [
+        [
+          "vih_coinfeccion",
+          3
+        ],
+        [
+          "insuficiencia_renal",
+          3
+        ]
+      ]
+    },
+    {
+      "key": "farmacoterapia",
+      "items": [
+        [
+          "tratamiento_complejo",
+          3
+        ],
+        [
+          "cambio_antiviral",
+          2
+        ],
+        [
+          "polimedicacion",
+          3
+        ],
+        [
+          "interacciones",
+          3
+        ]
+      ]
+    },
+    {
+      "key": "adherencia",
+      "items": [
+        [
+          "adherencia_suboptima",
+          4
+        ],
+        [
+          "autoadministracion",
+          2
+        ]
+      ]
+    },
+    {
+      "key": "contexto",
+      "items": [
+        [
+          "barreras_seguimiento",
+          3
+        ]
+      ]
+    }
+  ],
+  "overrides": [
+    {
+      "id": "no_nivel3_cirrosis_descompensada",
+      "minLevel": 2
+    },
+    {
+      "id": "no_nivel3_trasplante_mas_tratamiento_complejo",
+      "minLevel": 2
+    },
+    {
+      "id": "no_nivel3_adherencia_mas_barreras",
+      "minLevel": 2
+    }
+  ],
+  "followUp": {
+    "1": "Reevaluación cada 3 meses.",
+    "2": "Reevaluación cada 6 meses y luego anual salvo criterio profesional o cercanía a cambio de nivel.",
+    "3": "Reevaluación cada 12 meses y luego anual salvo criterio profesional o cercanía a cambio de nivel.",
+    "baseline": "Todos los pacientes VHB/VHB-VHD: evaluación al inicio del tratamiento."
+  },
+  "storageKeys": {
+    "detailsOpen": "hbv_hdv_details_open",
+    "patients": "hbv_hdv_patients_v1"
+  }
+}

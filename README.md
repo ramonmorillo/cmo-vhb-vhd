@@ -50,3 +50,13 @@ Se exporta `patient_id` pseudonimizado estable para análisis estadístico.
 
 - Los umbrales y pesos son preliminares y están centralizados en `APP_CONFIG` dentro de `app.js`.
 - Herramienta de apoyo: no sustituye el juicio clínico profesional.
+
+## Pruebas
+
+`npm test` (Node ≥ 20, sin dependencias) ejecuta los casos de referencia de `tests/casos-referencia.test.mjs`. Congelan con valores literales el modelo (`tests/fixtures/modelo-clinico.snapshot.json`), las fronteras de nivel (7/8 y 12/13), las reglas de seguridad, la extracción heurística, el pseudónimo y la estructura de exportación. `app.js` se carga sin modificar en un contexto `vm` (`tests/load-app.mjs`). Si una prueba falla, el comportamiento ha cambiado y requiere revisión explícita.
+
+Las pruebas marcadas como **HALLAZGO** fijan comportamientos actuales pendientes de decisión del autor (no corregidos):
+
+1. Con una regla de seguridad, el texto del nivel cita un rango de puntos que no corresponde a la puntuación (p. ej., 2 puntos → «Nivel 2 (… 8-12 puntos)»).
+2. Extracción heurística: la negación solo se reconoce si precede inmediatamente al término («sin signos de descompensación» → detectada); el patrón `erc` coincide como subcadena («tercera», «cerca» → insuficiencia renal); «últimos 12 meses» activa «cambio de antiviral»; solo se examina la primera aparición de cada patrón; el tipo de paciente ignora la negación («VHB sin VHD» → VHB-VHD).
+3. `pseudonym_id` es un hash de 32 bits sin sal del identificador local: determinista y reproducible por fuerza bruta sobre identificadores de espacio pequeño (p. ej., NHC numéricos).
