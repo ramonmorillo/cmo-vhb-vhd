@@ -388,7 +388,11 @@ function renderAiExtraction(extraction) {
 
   extraction.rows.forEach((row) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${row.label}</td><td>${row.detected ? 'Detectada' : 'No detectada'}</td><td>${row.confidence}</td><td>${row.evidence}</td>`;
+    [row.label, row.detected ? 'Detectada' : 'No detectada', row.confidence, row.evidence].forEach((value) => {
+      const cell = document.createElement('td');
+      cell.textContent = String(value ?? '');
+      tr.appendChild(cell);
+    });
     tbody.appendChild(tr);
   });
 }
@@ -461,12 +465,12 @@ function renderPatientsTable(records) {
 
   filtered.slice(0, 8).forEach((record) => {
     const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${record.pseudonym_id}</td>
-      <td>${record.patient_type}</td>
-      <td>${record.latest_result?.stratification_label || 'Sin nivel'}</td>
-      <td>${formatDateTime(record.updated_at)}</td>
-    `;
+    // Celdas con textContent: un backup importado no puede inyectar HTML.
+    [record.pseudonym_id, record.patient_type, record.latest_result?.stratification_label || 'Sin nivel', formatDateTime(record.updated_at)].forEach((value) => {
+      const cell = document.createElement('td');
+      cell.textContent = String(value ?? '');
+      row.appendChild(cell);
+    });
     tbody.appendChild(row);
   });
 }
