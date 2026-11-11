@@ -7,22 +7,23 @@
     <link rel="icon" href="vendor/cmo-ds/favicon.svg" type="image/svg+xml" />
     <meta name="theme-color" content="#14203a" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="vendor/cmo-ds/cmo-flow.css" />
     <link rel="stylesheet" href="cmo-visual.css" />
     <script type="application/json" id="cmo-app-meta">
       {
         "schema": "cmo-app-meta/1",
         "id": "cmo-vhb-vhd",
         "name": "CMO-HBV/HDV Pro",
-        "appVersion": "1.0.0",
+        "appVersion": "1.1.0",
         "algorithm": null,
-        "status": "released",
-        "releaseDate": "2026-10-30",
+        "status": "draft",
+        "releaseDate": null,
         "clinicalReviewDate": null,
         "credits": [{ "role": "Desarrollo digital", "name": "Dr. Ramón Morillo Verdugo" }],
         "model": "Basado en el modelo CMO: Capacidad, Motivación y Oportunidad. Las adaptaciones del modelo CMO son propiedad de la Sociedad Española de Farmacia Hospitalaria (SEFH).",
         "website": "https://ramonmorillo.es",
         "copyright": null,
-        "designSystem": "0.2.0"
+        "designSystem": "0.3.0"
       }
     </script>
     <script type="module" src="vendor/cmo-ds/cmo-author-signature.js"></script>
@@ -174,6 +175,7 @@
           <button id="savePatientBtn" class="btn secondary" type="button">Guardar paciente</button>
           <button id="updatePatientBtn" class="btn secondary" type="button">Actualizar paciente</button>
           <button id="newRecordBtn" class="btn ghost" type="button">Nueva estratificación</button>
+          <button id="deletePatientBtn" class="btn ghost" type="button">Eliminar paciente</button>
         </div>
 
         <div class="grid two">
@@ -246,10 +248,17 @@
           </div>
         </details>
 
+        <div id="flowExtras" hidden></div>
+
         <div class="actions">
-          <button id="copyBtn" class="btn secondary" type="button">Copiar resumen</button>
+          <button id="copyBtn" class="btn secondary" type="button">Copiar informe para historia clínica</button>
+          <button id="pdfBtn" class="btn secondary" type="button">Descargar PDF</button>
+          <button id="txtBtn" class="btn secondary" type="button">Descargar texto (.txt)</button>
           <button id="printBtn" class="btn secondary" type="button">Imprimir informe</button>
+          <button id="caseJsonBtn" class="btn ghost" type="button">Exportar caso (JSON)</button>
+          <button id="caseCsvBtn" class="btn ghost" type="button">Exportar caso (CSV)</button>
         </div>
+        <p id="copyStatus" class="status" role="status" aria-live="polite"></p>
       </section>
 
       <section id="researchSection" class="card">
@@ -311,5 +320,7 @@
 
     <script src="vendor/xlsx/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw"></script>
     <script src="app.js"></script>
+    <script src="engine-bridge.js"></script>
+    <script type="module" src="flow.mjs"></script>
   </body>
 </html>
