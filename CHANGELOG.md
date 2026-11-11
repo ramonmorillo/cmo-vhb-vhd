@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 — sin publicar (rama `claude/zen-pasteur-u8tn7z`)
+## 1.1.0 — 2026-11-11
 
 Factores Sí/No/Pendiente, resultado provisional, modificación profesional, informe único con PDF, actuaciones con estado, plan, copias de seguridad validadas y corrección de defectos. **Sin cambios en el modelo clínico**: la configuración (`APP_CONFIG`) y el cálculo (`calculateStratification`, umbrales y reglas de seguridad) de `app.js` son idénticos byte a byte (huellas en `tests/fixtures/motor.sha256.json`). La fecha y el estado de publicación se fijan en el commit de publicación.
 
