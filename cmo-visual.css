@@ -63,6 +63,7 @@ summary:focus-visible { outline: 3px solid var(--cmo-focus); outline-offset: 2px
 /* Núcleo 0.3.0: factores Sí/No/Pendiente, avisos, actuaciones con estado. */
 .option-row { display: grid; grid-template-columns: 1fr auto auto; gap: .5rem .75rem; align-items: center; }
 .option-row .tri-state { display: inline-flex; gap: .25rem; flex-wrap: wrap; }
+.option-row .tri-state input[type="radio"] { width: 24px; height: 24px; margin: 0; } /* WCAG 2.2 AA: tamaño mínimo del objetivo (24 px) */
 .option-row .tri-state label { display: inline-flex; align-items: center; gap: .25rem; min-height: 44px; padding: 0 .5rem; border: 1px solid var(--cmo-control-border); border-radius: var(--cmo-radius-sm); background: var(--cmo-surface); cursor: pointer; }
 .option-row.is-pending .tri-state label:has(input[value="pending"]:checked) { background: var(--cmo-warn-bg); color: var(--cmo-warn); font-weight: 700; }
 .option-row .option-main { min-width: 0; overflow-wrap: anywhere; }
