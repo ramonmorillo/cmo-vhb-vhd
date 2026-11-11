@@ -157,6 +157,7 @@ const STORAGE_KEYS = {
 const state = {
   lastResult: null,
   currentPatientId: null,
+  extras: { override: null, statuses: {}, plan: { nextReview: '', notes: '' } },
   preferences: {
     detailsOpen: JSON.parse(localStorage.getItem(STORAGE_KEYS.detailsOpen) || 'false')
   }
@@ -236,12 +237,20 @@ function renderDomains() {
     fieldset.appendChild(legend);
 
     domain.items.forEach((item) => {
-      const row = document.createElement('label');
+      const row = document.createElement('div');
       row.className = 'option-row';
+      row.setAttribute('role', 'group');
+      row.setAttribute('aria-labelledby', `lbl-${item.id}`);
+      // La casilla oculta conserva el contrato con el resto del código (collectFormData): marcada = «Sí».
       row.innerHTML = `
         <span class="option-main">
-          <input type="checkbox" data-item-id="${item.id}" data-domain="${domain.key}" />
-          <span>${item.label}</span>
+          <input type="checkbox" class="cmo-visually-hidden" tabindex="-1" aria-hidden="true" data-item-id="${item.id}" data-domain="${domain.key}" />
+          <span id="lbl-${item.id}">${item.label}</span>
+        </span>
+        <span class="tri-state">
+          <label><input type="radio" name="tri-${item.id}" value="yes" data-tri="${item.id}" /> Sí</label>
+          <label><input type="radio" name="tri-${item.id}" value="no" data-tri="${item.id}" /> No</label>
+          <label><input type="radio" name="tri-${item.id}" value="pending" data-tri="${item.id}" checked /> Pendiente</label>
         </span>
         <small class="point-chip">${item.points} puntos</small>
       `;
@@ -261,11 +270,24 @@ function renderDisclaimers() {
   });
 }
 
+// Estado de un factor: 'yes' | 'no' | 'pending'. La casilla oculta (data-item-id) refleja «Sí».
+function setFactorState(itemId, value) {
+  const radio = document.querySelector(`input[data-tri="${itemId}"][value="${value}"]`);
+  const checkbox = document.querySelector(`input[type="checkbox"][data-item-id="${itemId}"]`);
+  if (!radio || !checkbox) return;
+  radio.checked = true;
+  checkbox.checked = value === 'yes';
+  checkbox.closest('.option-row')?.classList.toggle('is-selected', value === 'yes');
+  checkbox.closest('.option-row')?.classList.toggle('is-pending', value === 'pending');
+}
+
+function getFactorState(itemId) {
+  return document.querySelector(`input[data-tri="${itemId}"]:checked`)?.value || 'pending';
+}
+
 function bindEvents() {
   const form = document.getElementById('stratificationForm');
   const resetBtn = document.getElementById('resetBtn');
-  const copyBtn = document.getElementById('copyBtn');
-  const printBtn = document.getElementById('printBtn');
   const detailsPanel = document.getElementById('detailsPanel');
   const runAiExtractionBtn = document.getElementById('runAiExtractionBtn');
   const applyAiExtractionBtn = document.getElementById('applyAiExtractionBtn');
@@ -273,8 +295,6 @@ function bindEvents() {
 
   form.addEventListener('submit', onSubmit);
   resetBtn.addEventListener('click', onReset);
-  copyBtn.addEventListener('click', copySummary);
-  printBtn.addEventListener('click', () => window.print());
   runAiExtractionBtn.addEventListener('click', onRunAiExtraction);
   applyAiExtractionBtn.addEventListener('click', onApplyAiExtraction);
   clearAiExtractionBtn.addEventListener('click', clearAiExtraction);
@@ -283,11 +303,13 @@ function bindEvents() {
     localStorage.setItem(STORAGE_KEYS.detailsOpen, JSON.stringify(detailsPanel.open));
   });
 
-  document.querySelectorAll('input[type="checkbox"][data-item-id]').forEach((checkbox) => {
-    checkbox.addEventListener('change', () => {
-      checkbox.closest('.option-row')?.classList.toggle('is-selected', checkbox.checked);
+  document.querySelectorAll('input[data-tri]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      setFactorState(radio.dataset.tri, radio.value);
+      updateLiveAssessment();
     });
   });
+  document.querySelectorAll('.option-row').forEach((row) => row.classList.add('is-pending'));
 
   document.getElementById('savePatientBtn').addEventListener('click', onSavePatient);
   document.getElementById('updatePatientBtn').addEventListener('click', onUpdatePatient);
@@ -298,13 +320,9 @@ function bindEvents() {
   document.getElementById('exportCsvBtn').addEventListener('click', () => exportResearchData('csv'));
   document.getElementById('exportJsonBtn').addEventListener('click', () => exportResearchData('json'));
   document.getElementById('backupExportBtn').addEventListener('click', exportBackupJson);
-  document.getElementById('backupImportInput').addEventListener('change', importBackupJson);
   document.getElementById('patientSearch').addEventListener('input', refreshPatientsList);
 
   document.getElementById('patientType').addEventListener('change', updateLiveAssessment);
-  document.querySelectorAll('input[type="checkbox"][data-item-id]').forEach((checkbox) => {
-    checkbox.addEventListener('change', updateLiveAssessment);
-  });
   updateLiveAssessment();
 }
 
@@ -408,14 +426,13 @@ function onApplyAiExtraction() {
     document.getElementById('patientType').value = extraction.patientType;
   }
 
+  // Solo lo detectado se incorpora (como «Sí»); lo no mencionado conserva su estado: la ausencia de mención no es «No».
   document.querySelectorAll('input[type="checkbox"][data-item-id]').forEach((checkbox) => {
-    const active = Boolean(extraction.factors[checkbox.dataset.itemId]);
-    checkbox.checked = active;
-    checkbox.closest('.option-row')?.classList.toggle('is-selected', active);
+    if (extraction.factors[checkbox.dataset.itemId]) setFactorState(checkbox.dataset.itemId, 'yes');
   });
 
   updateLiveAssessment();
-  setAiExtractionStatus('Variables aplicadas al formulario. Revise el resultado y pulse “Estratificar paciente”.');
+  setAiExtractionStatus('Variables detectadas aplicadas como «Sí»; el resto sigue como estaba (pendiente o ya valorado). Revise el resultado y pulse “Estratificar paciente”.');
   document.getElementById('stratificationSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -437,9 +454,10 @@ function setAiExtractionStatus(message, isError = false) {
 function updateLiveAssessment() {
   const formData = collectFormData();
   const result = calculateStratification(formData);
-  const checked = formData.activeFactors.length;
   const totalItems = APP_CONFIG.domains.flatMap((domain) => domain.items).length;
-  const completion = Math.round((checked / totalItems) * 100);
+  // Progreso = factores valorados (Sí o No); un factor pendiente no cuenta como valorado.
+  const assessed = totalItems - formData.pendingFactors.length;
+  const completion = Math.round((assessed / totalItems) * 100);
 
   document.getElementById('liveScorePill').textContent = `${result.totalScore} puntos · Nivel ${result.assignedLevel}`;
   document.getElementById('liveScoreValue').textContent = String(result.totalScore);
@@ -499,7 +517,13 @@ function onReset() {
   document.getElementById('validationMsg').textContent = '';
   document.querySelectorAll('.option-row.is-selected').forEach((row) => row.classList.remove('is-selected'));
   state.lastResult = null;
-  updateLiveAssessment();
+  state.extras = { override: null, statuses: {}, plan: { nextReview: '', notes: '' } };
+  // El evento «reset» se dispara antes de que el navegador limpie los campos: se recalcula después.
+  setTimeout(() => {
+    document.querySelectorAll('input[type="checkbox"][data-item-id]').forEach((c) => setFactorState(c.dataset.itemId, 'pending'));
+    updateLiveAssessment();
+    document.dispatchEvent(new CustomEvent('cmo:reset'));
+  }, 0);
 }
 
 function collectFormData() {
@@ -530,6 +554,7 @@ function collectFormData() {
     patientId: document.getElementById('patientId').value.trim(),
     notes: document.getElementById('clinicalNotes').value.trim(),
     factors,
+    pendingFactors: [...document.querySelectorAll('input[data-tri]:checked')].filter((r) => r.value === 'pending').map((r) => r.dataset.tri),
     domainScores,
     activeFactors
   };
@@ -639,6 +664,7 @@ function renderResult(result) {
 
   document.getElementById('notesEcho').textContent = result.notes || 'Sin observaciones.';
 
+  document.dispatchEvent(new CustomEvent('cmo:result', { detail: result }));
   document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -661,6 +687,7 @@ function buildEvaluationFromResult(result) {
     stratification_level: result.assignedLevel,
     stratification_label: result.levelMeta.label,
     factors: result.factors,
+    pending_factors: result.pendingFactors || [],
     domain_scores: result.domainScores
   };
 }
@@ -689,8 +716,12 @@ function onSavePatient() {
       stratification_level: state.lastResult.assignedLevel,
       stratification_label: state.lastResult.levelMeta.label,
       factors: state.lastResult.factors,
+      pending_factors: state.lastResult.pendingFactors || [],
       domain_scores: state.lastResult.domainScores
     },
+    professional_override: state.extras.override,
+    intervention_statuses: state.extras.statuses,
+    plan: state.extras.plan,
     evaluations: [buildEvaluationFromResult(state.lastResult)]
   };
 
@@ -723,8 +754,12 @@ function onUpdatePatient() {
         stratification_level: state.lastResult.assignedLevel,
         stratification_label: state.lastResult.levelMeta.label,
         factors: state.lastResult.factors,
+        pending_factors: state.lastResult.pendingFactors || [],
         domain_scores: state.lastResult.domainScores
       },
+      professional_override: state.extras.override,
+      intervention_statuses: state.extras.statuses,
+      plan: state.extras.plan,
       evaluations: [...existing.evaluations, buildEvaluationFromResult(state.lastResult)]
     };
   });
@@ -763,11 +798,16 @@ function loadRecordIntoForm(record) {
   document.getElementById('clinicalNotes').value = record.notes_non_identifying || '';
 
   const factors = record.latest_result?.factors || {};
+  const pendingIds = record.latest_result?.pending_factors || [];
   document.querySelectorAll('input[type="checkbox"][data-item-id]').forEach((checkbox) => {
-    const active = Boolean(factors[checkbox.dataset.itemId]);
-    checkbox.checked = active;
-    checkbox.closest('.option-row')?.classList.toggle('is-selected', active);
+    const id = checkbox.dataset.itemId;
+    setFactorState(id, pendingIds.includes(id) ? 'pending' : factors[id] ? 'yes' : 'no');
   });
+  state.extras = {
+    override: record.professional_override || null,
+    statuses: record.intervention_statuses || {},
+    plan: record.plan || { nextReview: '', notes: '' }
+  };
 
   const formData = collectFormData();
   const result = calculateStratification(formData);
@@ -857,7 +897,7 @@ function getSelectedRecordsForExport() {
     selected = state.currentPatientId ? records.filter((r) => r.id === state.currentPatientId) : [];
   }
   if (mode === 'complete') {
-    selected = selected.filter((r) => Boolean(r.latest_result?.stratification_label));
+    selected = selected.filter((r) => Boolean(r.latest_result?.stratification_label) && !(r.latest_result?.pending_factors || []).length);
   }
   return selected;
 }
@@ -877,7 +917,7 @@ function buildResearchDatasets(records) {
     };
 
     allFactorIds.forEach((factorId) => {
-      row[`factor_${factorId}`] = normalizeBoolean(record.latest_result?.factors?.[factorId]);
+      row[`factor_${factorId}`] = (record.latest_result?.pending_factors || []).includes(factorId) ? '' : normalizeBoolean(record.latest_result?.factors?.[factorId]);
     });
 
     return row;
@@ -895,7 +935,7 @@ function buildResearchDatasets(records) {
         stratification_label: evaluation.stratification_label
       };
       allFactorIds.forEach((factorId) => {
-        row[`factor_${factorId}`] = normalizeBoolean(evaluation.factors?.[factorId]);
+        row[`factor_${factorId}`] = (evaluation.pending_factors || []).includes(factorId) ? '' : normalizeBoolean(evaluation.factors?.[factorId]);
       });
       return row;
     })
@@ -1011,8 +1051,10 @@ function toDelimited(rows, delimiter) {
   rows.forEach((row) => {
     const values = headers.map((header) => {
       const value = row[header] ?? '';
-      const text = String(value).replace(/"/g, '""');
-      return `"${text}"`;
+      // Las celdas que empiezan por = + - @ se neutralizan para que una hoja de cálculo no las ejecute como fórmulas.
+      let cell = String(value);
+      if (/^[=+\-@\t\r]/.test(cell)) cell = `'${cell}`;
+      return `"${cell.replace(/"/g, '""')}"`;
     });
     lines.push(values.join(delimiter));
   });
@@ -1044,54 +1086,6 @@ function exportBackupJson() {
   };
   downloadBlob('hbv-hdv-backup.json', JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
   setExportStatus('Backup JSON completo generado.');
-}
-
-function importBackupJson(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = JSON.parse(String(reader.result));
-      if (!Array.isArray(parsed.records)) {
-        throw new Error('El archivo no contiene un array de registros válido.');
-      }
-      patientRepository.replaceAll(parsed.records);
-      refreshPatientsList();
-      setExportStatus(`Backup importado correctamente (${parsed.records.length} registros).`);
-    } catch (error) {
-      setExportStatus(`Error al importar backup: ${error.message}`, true);
-    } finally {
-      event.target.value = '';
-    }
-  };
-  reader.readAsText(file, 'utf-8');
-}
-
-async function copySummary() {
-  if (!state.lastResult) return;
-
-  const r = state.lastResult;
-  const summary = [
-    `${APP_CONFIG.appName} - Resumen de estratificación`,
-    `Tipo de paciente: ${r.patientType}`,
-    `ID no nominativo: ${r.patientId || 'No informado'}`,
-    `Puntuación total: ${r.totalScore}`,
-    `Nivel final: ${r.levelMeta.label}`,
-    `Periodicidad: ${r.reevalText}`,
-    `Objetivo asistencial: ${r.carePlan.objective}`,
-    `Intervenciones sugeridas: ${r.carePlan.interventions.join('; ')}`,
-    `Factores activos: ${r.activeFactors.length ? r.activeFactors.map((f) => f.label).join('; ') : 'Ninguno'}`,
-    `Narrativa: ${r.narrative}`
-  ].join('\n');
-
-  try {
-    await navigator.clipboard.writeText(summary);
-    alert('Resumen copiado al portapapeles.');
-  } catch {
-    alert('No se pudo copiar automáticamente. Use imprimir informe o copie manualmente.');
-  }
 }
 
 init();
